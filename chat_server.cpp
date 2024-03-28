@@ -189,7 +189,7 @@ void handle_join(
 
         // Send a private welcome message to the new user
         std::string welcome_msg = "Welcome to the chat, " + username + "! It is now " + time_stream.str();
-        chat::chat_message priv_welcome_msg = chat::dm_msg("Servger", welcome_msg);
+        chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
         sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
         if (sent_bytes != sizeof(priv_welcome_msg))
         {
