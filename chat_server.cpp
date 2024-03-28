@@ -454,6 +454,12 @@ void handle_leave(
     }
     else if (auto search = online_users.find(username); search != online_users.end())
     {
+
+        // sned a broadcast message mentioing the user has left
+        std::string leaveMessage = username + " has left!";
+        chat::chat_message broadcastMsg = chat::broadcast_msg("Server", leaveMessage);
+        send_all(broadcastMsg, username, online_users, sock, false);
+
         // first free memory for sockaddr
         struct sockaddr_in *addr = search->second;
         delete addr;
