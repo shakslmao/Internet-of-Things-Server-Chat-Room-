@@ -17,10 +17,14 @@
 #define USER_END "END"
 
 // ./chat_client "192.168.1.10" 1000 s2-akram
+// ./chat_client "192.168.1.10" 1020 user1
+
 // ./chat_client "127.0.0.1" 1000 s2-akram
+// ./chat_client "127.0.0.1" 1000 s2-akram 2> debug.log
 
 // ./chat_client "127.0.0.1" 1020 user1
-// ./chat_client "192.168.1.10" 1020 user1
+// ./chat_client "127.0.0.1" 1020 user1 2> debug.log
+
 // /opt/iot/bin/packets_clear
 
 // CHAT_SERVER
