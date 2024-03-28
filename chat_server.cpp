@@ -13,12 +13,20 @@
 #define USER_ALL "__ALL"
 #define USER_END "END"
 
-// Run:  ./chat_client "192.168.1.10" 1000 shaks
+// ./chat_client "192.168.1.10" 1000 s2-akram
+// ./ chat_client "127.0.0.1" 1000 s2-akram
+
+// ./chat_client "127.0.0.1" 1020 user1
+// ./chat_client "192.168.1.10" 1020 user1
+// /opt/iot/bin/packets_clear
+
+// CHAT_SERVER
 
 /**
  * @brief map of current online clients
  */
-typedef std::map<std::string, sockaddr_in *> online_users;
+typedef std::map<std::string, sockaddr_in *>
+    online_users;
 
 void handle_list(
     online_users &online_users, std::string username, std::string,
@@ -128,41 +136,42 @@ void handle_join(
     else
     {
         // Allocate new sockaddr_in structure and copy the client address into it
-        sockaddr_in *newUserAddress = new sockaddr_in;
-        memcpy(newUserAddress, &client_address, sizeof(client_address));
+        sockaddr_in *new_user_address = new sockaddr_in;
+        memcpy(new_user_address, &client_address, sizeof(client_address));
 
         // Check if the username is valid
         if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
         {
+            // Since no specific error code for invalid username, using ERR_UNKNOWN_USERNAME
+            DEBUG("Invalid username encountered: %s\n", username.c_str());
             handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
-            // handle_error(ERR_INVALID_USERNAME, client_address, sock, exit_loop); implement this
             return;
         }
         // Add the new user to the map
-        online_users[username] = newUserAddress;
+        online_users[username] = new_user_address;
 
         // Send back a JACK message to the client that has joined
-        auto jackMessage = chat::jack_msg();
-        ssize_t sentBytes = sock.sendto(reinterpret_cast<const char *>(&jackMessage), sizeof(jackMessage), 0, (sockaddr *)&client_address, sizeof(client_address));
+        auto jack_message = chat::jack_msg();
+        ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&jack_message), sizeof(jack_message), 0, (sockaddr *)&client_address, sizeof(client_address));
 
         // Check if the JACK message was sent successfully
-        if (sentBytes != sizeof(jackMessage))
+        if (sent_bytes != sizeof(jack_message))
         {
             DEBUG("Failed to send JACK message to new user\n");
-            delete newUserAddress;        // Free the memory allocated for the new user's address
+            delete new_user_address;      // Free the memory allocated for the new user's address
             online_users.erase(username); // Remove the new user from the map
 
             return;
         }
 
         // Send a broadcast message to all other clients about the new join
-        chat::chat_message broadcastMsg = chat::broadcast_msg("Server", username + " has joined the chat.");
+        chat::chat_message broadcast_msg = chat::broadcast_msg("Server", username + " has joined the chat.");
         for (const auto &[user, addr] : online_users)
         {
             if (user != username) // Avoid sending the message to the user who just joined
             {
-                sentBytes = sock.sendto(reinterpret_cast<const char *>(&broadcastMsg), sizeof(broadcastMsg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
-                if (sentBytes != sizeof(broadcastMsg))
+                sent_bytes = sock.sendto(reinterpret_cast<const char *>(&broadcast_msg), sizeof(broadcast_msg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+                if (sent_bytes != sizeof(broadcast_msg))
                 {
                     DEBUG("Failed to send broadcast message to user %s\n", user.c_str());
                 }
@@ -170,10 +179,10 @@ void handle_join(
         }
 
         // Send a private welcome message to the new user
-        std::string welcomeMessage = "Welcome to the chat, " + username + "! Type /list to see all online users.";
-        chat::chat_message privateWelcomeMsg = chat::dm_msg("Server", welcomeMessage);
-        sentBytes = sock.sendto(reinterpret_cast<const char *>(&privateWelcomeMsg), sizeof(privateWelcomeMsg), 0, (sockaddr *)&client_address, sizeof(client_address));
-        if (sentBytes != sizeof(privateWelcomeMsg))
+        std::string welcome_msg = "Welcome to the chat, " + username + "! Type /list to see all online users.";
+        chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
+        sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
+        if (sent_bytes != sizeof(priv_welcome_msg))
         {
             DEBUG("Failed to send private welcome message to new user\n");
         }
@@ -213,31 +222,67 @@ void handle_jack(
  */
 
 ///////////////////////////////////// WORKSHEET IMPLEMENTATION //////////////////////////////////////////////////////
+
+// remember you need to translate the client IO address with inet_ntoa,
+// and also the user you are comparing
+
+// check if user matches the incoming client address, using strcmp, and
+// and if so send message with chat::dm_msg()
+
 void handle_directmessage(
     online_users &online_users, std::string username, std::string message,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received directmessage to %s\n", username.c_str());
 
-    // handle sending direct message
-    if (auto search = online_users.find(username); search != online_users.end())
+    // Extract the recipient username and actual message
+    std::size_t colon_pos = message.find(':');
+    if (colon_pos == std::string::npos)
     {
-        DEBUG("found user dm\n");
-        for (const auto user : online_users)
-        {
-            // remember you need to translate the client IO address with inet_ntoa,
-            // and also the user you are comparing
+        DEBUG("Invalid DM format\n");
+        return; // Invalid format, could log or handle error here
+    }
 
-            // check if user matches the incoming client address, using strcmp, and
-            // and if so send message with chat::dm_msg()
+    std::string recipient_username = message.substr(0, colon_pos);
+    std::string actual_message = message.substr(colon_pos + 1);
+
+    // Find the sender in the online_users map
+    auto sender_it = online_users.find(username);
+    if (sender_it == online_users.end() || sender_it->second->sin_addr.s_addr != client_address.sin_addr.s_addr)
+    {
+        DEBUG("Sender %s not found\n", username.c_str());
+        return;
+    }
+
+    DEBUG("Parsed DM: To %s, Message %s\n", recipient_username.c_str(), actual_message.c_str());
+
+    // Find the recipient in the online_users map
+    auto recipient_it = online_users.find(recipient_username);
+    if (recipient_it != online_users.end())
+    {
+        DEBUG("Sending DM to %s\n", recipient_username.c_str());
+
+        // Create DM message
+        chat::chat_message dm_msg = chat::dm_msg(username, actual_message);
+
+        // Send DM to the recipient
+        ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(dm_msg), 0, (sockaddr *)recipient_it->second, sizeof(struct sockaddr_in));
+        // Check if the message was sent successfully
+        if (sent_bytes != sizeof(dm_msg))
+        {
+            DEBUG("Failed to send DM to %s\n", recipient_username.c_str());
+            // Optionally, handle the error, such as notifying the sender of the failure
         }
     }
     else
     {
-        // TODO: error message
+        DEBUG("Recipient %s not found\n", recipient_username.c_str());
+        // Here, you might want to send an error message back to the sender
+        // indicating that the recipient username does not exist or is not online.
+        chat::chat_message err_msg = chat::error_msg(ERR_UNKNOWN_USERNAME);
+        sock.sendto(reinterpret_cast<const char *>(&err_msg), sizeof(err_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
     }
 }
-
 /**
  * @brief handle list message
  *
@@ -456,12 +501,29 @@ void handle_exit(
     online_users &online_users, std::string username, std::string,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
-
     DEBUG("Received exit\n");
 
-    // send exit message (chat::exit_msg()) to each user, and clear up memory for them
+    // Create exit message
+    chat::chat_message exit_message = chat::exit_msg();
 
-    // leave this code as it is required for exiting
+    // Send exit message to each user
+    for (const auto &[user, addr] : online_users)
+    {
+        ssize_t send_bytes = sock.sendto(reinterpret_cast<const char *>(&exit_message), sizeof(exit_message), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+        if (send_bytes != sizeof(exit_message))
+        {
+            DEBUG("Failed to send exit message to user %s\n", user.c_str());
+        }
+    }
+
+    // Clear up memory for each user
+    for (const auto &user : online_users)
+    {
+        delete user.second;
+    }
+    online_users.clear();
+
+    // Leave this code as it is required for exiting
     exit_loop = true;
 }
 
@@ -559,7 +621,9 @@ void server()
 int main(void)
 {
     // Set server IP address
-    uwe::set_ipaddr("192.168.1.8");
+    // uwe::set_ipaddr("192.168.1.8");
+    uwe::set_ipaddr("127.0.0.1");
+
     server();
 
     return 0;

@@ -16,6 +16,8 @@
 #include <colors.hpp>
 #include <util.hpp>
 
+// CHAT_CLIENT
+
 namespace
 {
     std::atomic<bool> sent_leave{false};
@@ -67,7 +69,11 @@ std::pair<std::thread, Channel<chat::chat_message>> make_receiver(uwe::socket *s
                                             // you need to fill in
                                             // receive message from server
                                             // send it over channel (tx) to main UI thread
-
+                                            ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
+                                            if (recv_len > 0)
+                                            {
+                                                tx.send(msg);
+                                            }
                                             // exit receiver thread
                                             if (msg.type_ == chat::EXIT || (msg.type_ == chat::LACK && sent_leave))
                                             {
@@ -97,7 +103,8 @@ int main(int argc, char **argv)
     // Set client IP address
     uwe::set_ipaddr(argv[1]);
 
-    const char *server_name = "192.168.1.8";
+    // const char *server_name = "192.168.1.8";
+    const char *server_name = "127.0.0.1";
 
     const int server_port = SERVER_PORT;
 
@@ -165,19 +172,27 @@ int main(int argc, char **argv)
                         case chat::EXIT:
                         {
                             DEBUG("Received Exit from GUI\n");
-                            // you need to fill in
+                            // Send EXIT message to the server
+                            chat::chat_message exit_msg = chat::exit_msg();
+                            sock.sendto(reinterpret_cast<const char *>(&exit_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                            exit_loop = true;
                             break;
                         }
                         case chat::LEAVE:
                         {
                             DEBUG("Received LEAVE from GUI\n");
-                            // you need to fill in
+                            // Send LEAVE message to the server
+                            chat::chat_message leave_msg = chat::leave_msg();
+                            sock.sendto(reinterpret_cast<const char *>(&leave_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                            sent_leave = true;
                             break;
                         }
                         case chat::LIST:
                         {
                             DEBUG("Received LIST from GUI\n");
                             // you need to fill in
+                            chat::chat_message list_msg = chat::list_msg();
+                            sock.sendto(reinterpret_cast<const char *>(&list_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
                             break;
                         }
                         default:
@@ -190,6 +205,20 @@ int main(int argc, char **argv)
                             }
                             break;
                         }
+                        }
+                        if (cmds.size() == 2 && type == chat::UNKNOWN)
+                        {
+                            std::string recipient = cmds[0];
+                            std::string content = cmds[1];
+                            chat::chat_message dm_msg = chat::dm_msg(recipient, content);
+                            sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                            DEBUG("DM sent to %s\n", recipient.c_str(), content.c_str());
+                        }
+                        else
+                        {
+                            chat::chat_message bc_msg = chat::broadcast_msg(username, cmds[0]);
+                            sock.sendto(reinterpret_cast<const char *>(&bc_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                            DEBUG("Broadcast message sent\n");
                         }
                     }
                     else
