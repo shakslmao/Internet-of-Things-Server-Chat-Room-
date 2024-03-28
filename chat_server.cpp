@@ -13,6 +13,8 @@
 #define USER_ALL "__ALL"
 #define USER_END "END"
 
+// Run:  ./chat_client "192.168.1.10" 1000 shaks
+
 /**
  * @brief map of current online clients
  */
@@ -111,7 +113,7 @@ void handle_broadcast(
  * @parm exit_loop set to true if event loop is to terminate
  */
 
-///////////////////////////////////// IMPLEMENTATION //////////////////////////////////////////////////////
+///////////////////////////////////// WORKSHEET IMPLEMENTATION  //////////////////////////////////////////////////////
 void handle_join(
     online_users &online_users, std::string username, std::string,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
@@ -132,7 +134,8 @@ void handle_join(
         // Check if the username is valid
         if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
         {
-            handle_error(ERR_INVALID_USERNAME, client_address, sock, exit_loop);
+            handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+            // handle_error(ERR_INVALID_USERNAME, client_address, sock, exit_loop); implement this
             return;
         }
         // Add the new user to the map
@@ -208,6 +211,8 @@ void handle_jack(
  * @param sock socket for communicting with client
  * @parm exit_loop set to true if event loop is to terminate
  */
+
+///////////////////////////////////// WORKSHEET IMPLEMENTATION //////////////////////////////////////////////////////
 void handle_directmessage(
     online_users &online_users, std::string username, std::string message,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
@@ -445,6 +450,8 @@ void handle_lack(
  * @param sock socket for communicting with client
  * @parm exit_loop set to true if event loop is to terminate
  */
+
+///////////////////////////////////// WORKSHEET IMPLEMENTATION //////////////////////////////////////////////////////
 void handle_exit(
     online_users &online_users, std::string username, std::string,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
