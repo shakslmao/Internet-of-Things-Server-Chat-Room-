@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <chat.hpp>
+#include <iostream>
 
 #define USER_ALL "__ALL"
 #define USER_END "END"
@@ -109,6 +110,8 @@ void handle_broadcast(
  * @param sock socket for communicting with client
  * @parm exit_loop set to true if event loop is to terminate
  */
+
+///////////////////////////////////// IMPLEMENTATION //////////////////////////////////////////////////////
 void handle_join(
     online_users &online_users, std::string username, std::string,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
@@ -122,13 +125,30 @@ void handle_join(
     }
     else
     {
-        // add new user to known user map
+        // Allocate new sockaddr_in structure and copy the client address into it
+        sockaddr_in *newUserAddress = new sockaddr_in;
+        memcpy(newUserAddress, &client_address, sizeof(client_address));
 
-        // send back JACK message to client that has joined
+        // Add the new user to the map
+        online_users[username] = newUserAddress;
 
-        // send broadcast (use handle broadcast) to all other clients
+        // Send back a JACK message to the client that has joined
+        auto jackMessage = chat::jack_msg();
+        sock.sendto(reinterpret_cast<const char *>(&jackMessage), sizeof(jackMessage), 0, (sockaddr *)&client_address, sizeof(client_address));
 
-        // send list message (use handle_list) set 2nd argument to "__ALL"
+        // Send a broadcast message to all other clients about the new join
+        chat::chat_message broadcastMsg = chat::broadcast_msg("Server", username + " has joined the chat.");
+        for (const auto &[user, addr] : online_users)
+        {
+            if (user != username) // Avoid sending the message to the user who just joined
+            {
+                sock.sendto(reinterpret_cast<const char *>(&broadcastMsg), sizeof(broadcastMsg), 0,
+                            (sockaddr *)addr, sizeof(struct sockaddr_in));
+            }
+        }
+        
+        // Optionally, send a list of all currently online users to the new user
+        handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
     }
 }
 
