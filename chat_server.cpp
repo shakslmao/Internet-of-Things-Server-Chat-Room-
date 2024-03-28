@@ -9,12 +9,15 @@
 
 #include <chat.hpp>
 #include <iostream>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 #define USER_ALL "__ALL"
 #define USER_END "END"
 
 // ./chat_client "192.168.1.10" 1000 s2-akram
-// ./ chat_client "127.0.0.1" 1000 s2-akram
+// ./chat_client "127.0.0.1" 1000 s2-akram
 
 // ./chat_client "127.0.0.1" 1020 user1
 // ./chat_client "192.168.1.10" 1020 user1
@@ -178,8 +181,14 @@ void handle_join(
             }
         }
 
+        auto now = std::chrono::system_clock::now();
+        auto now_c = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream time_stream;
+        time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+
         // Send a private welcome message to the new user
-        std::string welcome_msg = "Welcome to the chat, " + username + "! Type /list to see all online users.";
+        std::string welcome_msg = "Welcome to the chat, " + username + "! It is now " + time_stream.str();
         chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
         sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
         if (sent_bytes != sizeof(priv_welcome_msg))

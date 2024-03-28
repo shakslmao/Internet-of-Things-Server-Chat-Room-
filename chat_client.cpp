@@ -15,6 +15,9 @@
 #include <gui.hpp>
 #include <colors.hpp>
 #include <util.hpp>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 // CHAT_CLIENT
 
