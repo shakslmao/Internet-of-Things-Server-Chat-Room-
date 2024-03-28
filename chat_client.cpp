@@ -68,7 +68,7 @@ std::pair<std::thread, Channel<chat::chat_message>> make_receiver(uwe::socket *s
                                         for (;;)
                                         {
                                             chat::chat_message msg;
-
+                                            //////////////////////////////////////// IMPLEMENTATION ////////////////////////////////////////////////////
                                             // you need to fill in
                                             // receive message from server
                                             // send it over channel (tx) to main UI thread
@@ -170,6 +170,7 @@ int main(int argc, char **argv)
                     if (cmds.size() > 1)
                     {
                         chat::chat_type type = to_type(cmds[0]);
+                        //////////////////////////////////////// IMPLEMENTATION ////////////////////////////////////////////////////
                         switch (type)
                         {
                         case chat::EXIT:
@@ -209,13 +210,15 @@ int main(int argc, char **argv)
                             break;
                         }
                         }
+                        //////////////////////////////////////// IMPLEMENTATION ////////////////////////////////////////////////////
                         if (cmds.size() == 2 && type == chat::UNKNOWN)
                         {
                             std::string recipient = cmds[0];
                             std::string content = cmds[1];
-                            chat::chat_message dm_msg = chat::dm_msg(recipient, content);
+                            std::string dm_message = recipient + ":" + content;
+                            chat::chat_message dm_msg = chat::dm_msg(username, dm_message);
                             sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
-                            DEBUG("DM sent to %s\n", recipient.c_str(), content.c_str());
+                            DEBUG("DM sent to %s\n", recipient.c_str());
                         }
                         else
                         {

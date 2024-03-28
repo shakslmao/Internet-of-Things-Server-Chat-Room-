@@ -243,17 +243,19 @@ void handle_directmessage(
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received directmessage to %s\n", username.c_str());
+    DEBUG("Raw Message Recieved for DM: %s\n", message.c_str());
 
     // Extract the recipient username and actual message
     std::size_t colon_pos = message.find(':');
     if (colon_pos == std::string::npos)
     {
-        DEBUG("Invalid DM format\n");
+        DEBUG("Invalid DM format, missing colon. Received: %s\n", message.c_str());
         return; // Invalid format, could log or handle error here
     }
 
     std::string recipient_username = message.substr(0, colon_pos);
     std::string actual_message = message.substr(colon_pos + 1);
+    DEBUG("Parsed DM: Recipient: %s, Message: %s\n", recipient_username.c_str(), actual_message.c_str());
 
     // Find the sender in the online_users map
     auto sender_it = online_users.find(username);
