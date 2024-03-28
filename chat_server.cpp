@@ -129,12 +129,28 @@ void handle_join(
         sockaddr_in *newUserAddress = new sockaddr_in;
         memcpy(newUserAddress, &client_address, sizeof(client_address));
 
+        // Check if the username is valid
+        if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
+        {
+            handle_error(ERR_INVALID_USERNAME, client_address, sock, exit_loop);
+            return;
+        }
         // Add the new user to the map
         online_users[username] = newUserAddress;
 
         // Send back a JACK message to the client that has joined
         auto jackMessage = chat::jack_msg();
-        sock.sendto(reinterpret_cast<const char *>(&jackMessage), sizeof(jackMessage), 0, (sockaddr *)&client_address, sizeof(client_address));
+        ssize_t sentBytes = sock.sendto(reinterpret_cast<const char *>(&jackMessage), sizeof(jackMessage), 0, (sockaddr *)&client_address, sizeof(client_address));
+
+        // Check if the JACK message was sent successfully
+        if (sentBytes != sizeof(jackMessage))
+        {
+            DEBUG("Failed to send JACK message to new user\n");
+            delete newUserAddress;        // Free the memory allocated for the new user's address
+            online_users.erase(username); // Remove the new user from the map
+
+            return;
+        }
 
         // Send a broadcast message to all other clients about the new join
         chat::chat_message broadcastMsg = chat::broadcast_msg("Server", username + " has joined the chat.");
@@ -142,11 +158,23 @@ void handle_join(
         {
             if (user != username) // Avoid sending the message to the user who just joined
             {
-                sock.sendto(reinterpret_cast<const char *>(&broadcastMsg), sizeof(broadcastMsg), 0,
-                            (sockaddr *)addr, sizeof(struct sockaddr_in));
+                sentBytes = sock.sendto(reinterpret_cast<const char *>(&broadcastMsg), sizeof(broadcastMsg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+                if (sentBytes != sizeof(broadcastMsg))
+                {
+                    DEBUG("Failed to send broadcast message to user %s\n", user.c_str());
+                }
             }
         }
-        
+
+        // Send a private welcome message to the new user
+        std::string welcomeMessage = "Welcome to the chat, " + username + "! Type /list to see all online users.";
+        chat::chat_message privateWelcomeMsg = chat::dm_msg("Server", welcomeMessage);
+        sentBytes = sock.sendto(reinterpret_cast<const char *>(&privateWelcomeMsg), sizeof(privateWelcomeMsg), 0, (sockaddr *)&client_address, sizeof(client_address));
+        if (sentBytes != sizeof(privateWelcomeMsg))
+        {
+            DEBUG("Failed to send private welcome message to new user\n");
+        }
+
         // Optionally, send a list of all currently online users to the new user
         handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
     }
