@@ -46,16 +46,17 @@ namespace chat
         JACK,
         BROADCAST,
         DIRECTMESSAGE,
+        CREATE_GROUP,
+        GROUP_ADMIN,
+        ADD_TO_GROUP,
+        GROUP_MESSAGE,
+        REMOVE_FROM_GROUP,
         LIST,
         LEAVE,
         LACK,
         EXIT,
         ERROR,
         UNKNOWN,
-        CREATE_GROUP,
-        ADD_TO_GROUP,
-        GROUP_MESSAGE,
-        REMOVE_FROM_GROUP
     };
 
     /** @brief check if type is indeed a valid chat_type.
@@ -158,6 +159,20 @@ namespace chat
     }
 
     /**
+     * @brief Create a CREATE_GROUP message
+     * @param group_name to be stored in the message
+     * @param message to be stored in the message
+     * @return the chat message
+     */
+    inline chat_message create_group_msg(std::string group_name)
+    {
+        chat_message msg{CREATE_GROUP, '\0', '\0'};
+        memcpy(&msg.message_[0], group_name.c_str(), group_name.length());
+        msg.message_[group_name.length()] = '\0';
+        return msg;
+    }
+
+    /**
      * @brief Create a LEAVE message
      * @return the chat message
      */
@@ -206,4 +221,4 @@ namespace chat
 #define ERR_UNKNOWN_USERNAME 1
 #define ERR_UNEXPECTED_MSG 2
 
-}
+}; // namespace chat

@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <chat.hpp>
+// #include "chat_new.hpp"
 #include <iostream>
 #include <chrono>
 #include <iomanip>
@@ -460,9 +461,9 @@ void handle_leave(
     {
 
         // sned a broadcast message mentioing the user has left
-        std::string leaveMessage = username + " has left!";
-        chat::chat_message broadcastMsg = chat::broadcast_msg("Server", leaveMessage);
-        send_all(broadcastMsg, username, online_users, sock, false);
+        std::string leave_message = username + " has left!";
+        chat::chat_message broadcast_msg = chat::broadcast_msg("Server", leave_message);
+        send_all(broadcast_msg, username, online_users, sock, false);
 
         // first free memory for sockaddr
         struct sockaddr_in *addr = search->second;

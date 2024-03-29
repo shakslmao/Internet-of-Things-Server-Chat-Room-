@@ -1,9 +1,8 @@
-DEBUG: chat_client.cpp:146:main(): Join message (user1) sent, waiting for JACK
-DEBUG: chat_client.cpp:152:main(): Received jack
-DEBUG: chat_client.cpp:208:main(): Received message from GUI
-DEBUG: chat_client.cpp:221:main(): DM sent to s2
-DEBUG:DEBUG: chat_client.cpp:187:main(): Received LEAVE from GUI
-DEBUG: chat_client.cpp:227:main(): Broadcast messagDEBUG: chat_client.cpp:187:main(): Received LEAVE from GUI
+DEBUG: chat_client.cpp:146:main(): Join message (s2-akram) sent, waiting for JACK
+DEBUG: chat_client.cpp:152:main(): Received jaDEBDEBUG: chat_client.cpp:208:main(): Received message from GUI
+DEBUG: chat_client.cpp:221:main(): DM sent to useDEBDEBUG: chat_client.cpp:208:main(): Received message from GUI
+DEBUG: chat_client.cpp:221:main(): DM sent to leave
+DEBUG: chat_client.cpp:187:main(): Received LEAVE from GUI
 DEBUG: chat_client.cpp:227:main(): Broadcast message sent
 DEBUG: chat_client.cpp:264:main(): Received LACK
 DEBUG: chat_client.cpp:331:main(): Exited loop
