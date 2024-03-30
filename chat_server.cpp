@@ -409,7 +409,7 @@ void handle_list(
     chat::chat_message msg{chat::LIST, '\0', '\0'};
     username_data[MAX_USERNAME_LENGTH - username_size] = '\0';
     DEBUG("username_data = %s\n", username_data);
-    memcpy(msg.username_, &username_data[0], h - username_size);
+    memcpy(msg.username_, &username_data[0], MAX_USERNAME_LENGTH - username_size);
     message_data[MAX_MESSAGE_LENGTH - message_size] = '\0';
     memcpy(msg.message_, &message_data[0], MAX_MESSAGE_LENGTH - message_size);
 
@@ -567,6 +567,11 @@ void handle_error(
     DEBUG("Received error\n");
 }
 
+/**
+ * @brief
+ * @param
+ * @param
+ */
 void handle_creategroup(online_users &online_users, group_members &groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received creategroup\n");
@@ -576,7 +581,8 @@ void handle_creategroup(online_users &online_users, group_members &groups, std::
     }
     else
     {
-        groups[group_name] = {username};
+        groups[group_name].push_back(username);
+
         std::string created_message = username + " created a new group: " + group_name;
         chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
         for (const auto &user : online_users)
@@ -664,7 +670,10 @@ void server()
 
             if (type == chat::CREATE_GROUP)
             {
-                handle_creategroup(online_users, groups, username, msg, client_address, sock, exit_loop);
+                DEBUG("Raw username: %s, Raw group name: %s\n", (const char *)&message->username_[0], (const char *)&message->groupname_[0]);
+                std::string username{(const char *)&message->username_[0]};
+                std::string group_name{(const char *)&message->groupname_[0]}; // Extract the group name from the message
+                handle_creategroup(online_users, groups, username, group_name, client_address, sock, exit_loop);
             }
             else if (chat::is_valid_type(type))
             {

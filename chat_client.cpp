@@ -180,7 +180,7 @@ int main(int argc, char **argv)
                             if (cmds.size() > 1)
                             {
                                 std::string group_name = cmds[1];
-                                chat::chat_message creategroup_msg = chat::create_group(group_name);
+                                chat::chat_message creategroup_msg = chat::create_group(group_name, username);
                                 sock.sendto(reinterpret_cast<const char *>(&creategroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
                                 DEBUG("Create group '%s' message sent\n", group_name.c_str());
                             }
