@@ -10,8 +10,8 @@
 
 // IOT socket api
 #include <iot/socket.hpp>
-#include <chat.hpp>
-// #include "chat_new.hpp"
+// #include <chat.hpp>
+#include "chat_new.hpp"
 #include <gui.hpp>
 #include <colors.hpp>
 #include <util.hpp>
@@ -48,6 +48,8 @@ chat::chat_type to_type(std::string cmd)
         return chat::LEAVE;
     case string_to_int("exit"):
         return chat::EXIT;
+    case string_to_int("creategroup"): // to create a group
+        return chat::CREATE_GROUP;
     default:
         return chat::UNKNOWN;
     }
@@ -173,6 +175,21 @@ int main(int argc, char **argv)
                         //////////////////////////////////////// IMPLEMENTATION ////////////////////////////////////////////////////
                         switch (type)
                         {
+                        case chat::CREATE_GROUP:
+                        {
+                            if (cmds.size() > 1)
+                            {
+                                std::string group_name = cmds[1];
+                                chat::chat_message creategroup_msg = chat::create_group(group_name);
+                                sock.sendto(reinterpret_cast<const char *>(&creategroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                                DEBUG("Create group '%s' message sent\n", group_name.c_str());
+                            }
+                            else
+                            {
+                                DEBUG("Invalid creategroup command format\n");
+                            }
+                            break;
+                        }
                         case chat::EXIT:
                         {
                             DEBUG("Received Exit from GUI\n");

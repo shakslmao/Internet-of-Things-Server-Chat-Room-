@@ -8,6 +8,7 @@
 
 #define MAX_USERNAME_LENGTH 64
 #define MAX_MESSAGE_LENGTH 1024
+#define MAX_GROUPNAME_LENGTH 64 // define max group name length
 
 // Server always run on this port
 #define SERVER_PORT 8867
@@ -46,11 +47,11 @@ namespace chat
         JACK,
         BROADCAST,
         DIRECTMESSAGE,
-        CREATE_GROUP,
-        GROUP_ADMIN,
-        ADD_TO_GROUP,
-        GROUP_MESSAGE,
-        REMOVE_FROM_GROUP,
+        CREATE_GROUP,      // New
+        ADD_TO_GROUP,      // New
+        REMOVE_FROM_GROUP, // New
+        GROUP_MESSAGE,     // New
+        LIST_GROUPS,       // New
         LIST,
         LEAVE,
         LACK,
@@ -65,7 +66,8 @@ namespace chat
      */
     inline bool is_valid_type(chat_type type)
     {
-        return type >= JOIN && type <= ERROR;
+        // return type >= JOIN && type <= ERROR;
+        return type >= JOIN && type <= UNKNOWN;
     }
 
     /**
@@ -82,15 +84,50 @@ namespace chat
     {
         uint8_t type_;
         int8_t username_[MAX_USERNAME_LENGTH];
+        int8_t groupname_[MAX_GROUPNAME_LENGTH];
         int8_t message_[MAX_MESSAGE_LENGTH];
     };
+
+    /**
+     * @brief
+     * @param
+     * @return
+     */
+
+    inline chat_message create_group(std::string group_name)
+    {
+        chat_message msg;
+        msg.type_ = CREATE_GROUP;
+        memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
+        msg.groupname_[group_name.length()] = '\0';
+        msg.message_[0] = '\0';
+        return msg;
+    }
+
+    /**
+     * @brief
+     * @param
+     * @return
+     */
+
+    inline chat_message add_to_group(std::string group_name, std::string username)
+    {
+        chat_message msg;
+        msg.type_ = ADD_TO_GROUP;
+        memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
+        msg.groupname_[group_name.length()] = '\0';
+        memcpy(&msg.username_[0], username.c_str(), username.length());
+        msg.message_[0] = '\0';
+        return msg;
+    }
 
     /**
      * @brief Create a JOIN message
      * @param username to be stored in the message
      * @return the chat message
      */
-    inline chat_message join_msg(std::string username)
+    inline chat_message
+    join_msg(std::string username)
     {
         chat_message msg;
         msg.type_ = JOIN;
@@ -159,20 +196,6 @@ namespace chat
     }
 
     /**
-     * @brief Create a CREATE_GROUP message
-     * @param group_name to be stored in the message
-     * @param message to be stored in the message
-     * @return the chat message
-     */
-    inline chat_message create_group_msg(std::string group_name)
-    {
-        chat_message msg{CREATE_GROUP, '\0', '\0'};
-        memcpy(&msg.message_[0], group_name.c_str(), group_name.length());
-        msg.message_[group_name.length()] = '\0';
-        return msg;
-    }
-
-    /**
      * @brief Create a LEAVE message
      * @return the chat message
      */
@@ -220,5 +243,6 @@ namespace chat
 #define ERR_USER_ALREADY_ONLINE 0
 #define ERR_UNKNOWN_USERNAME 1
 #define ERR_UNEXPECTED_MSG 2
+#define ERR_GROUP_ALREADY_EXISTS 3
 
 }; // namespace chat

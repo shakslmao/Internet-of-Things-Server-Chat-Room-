@@ -7,12 +7,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <chat.hpp>
-// #include "chat_new.hpp"
+// #include <chat.hpp>
+#include "chat_new.hpp"
 #include <iostream>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
 #define USER_ALL "__ALL"
 #define USER_END "END"
@@ -33,8 +34,8 @@
 /**
  * @brief map of current online clients
  */
-typedef std::map<std::string, sockaddr_in *>
-    online_users;
+typedef std::map<std::string, sockaddr_in *> online_users;
+typedef std::map<std::string, std::vector<std::string>> group_members;
 
 void handle_list(
     online_users &online_users, std::string username, std::string,
@@ -408,7 +409,7 @@ void handle_list(
     chat::chat_message msg{chat::LIST, '\0', '\0'};
     username_data[MAX_USERNAME_LENGTH - username_size] = '\0';
     DEBUG("username_data = %s\n", username_data);
-    memcpy(msg.username_, &username_data[0], MAX_USERNAME_LENGTH - username_size);
+    memcpy(msg.username_, &username_data[0], h - username_size);
     message_data[MAX_MESSAGE_LENGTH - message_size] = '\0';
     memcpy(msg.message_, &message_data[0], MAX_MESSAGE_LENGTH - message_size);
 
@@ -566,18 +567,57 @@ void handle_error(
     DEBUG("Received error\n");
 }
 
+void handle_creategroup(online_users &online_users, group_members &groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received creategroup\n");
+    if (groups.find(group_name) != groups.end())
+    {
+        handle_error(ERR_GROUP_ALREADY_EXISTS, client_address, sock, exit_loop);
+    }
+    else
+    {
+        groups[group_name] = {username};
+        std::string created_message = username + " created a new group: " + group_name;
+        chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+        for (const auto &user : online_users)
+        {
+            // Send the message to all users except the one who created the group
+            if (user.first != username)
+            {
+                sock.sendto(reinterpret_cast<const char *>(&custom_msg), sizeof(custom_msg), 0, (sockaddr *)user.second, sizeof(struct sockaddr_in));
+            }
+        }
+        DEBUG("Username: %s, Group Name: %s\n", username.c_str(), group_name.c_str());
+
+        // send a confirmation message to the user who created the group
+        std::string confirmation_message = "You've created a new group " + group_name;
+        chat::chat_message confirmation_msg = chat::dm_msg(username, confirmation_message);
+        sock.sendto(reinterpret_cast<const char *>(&confirmation_msg), sizeof(chat::chat_message), 0, (sockaddr *)&client_address, sizeof(client_address));
+    }
+}
+
 /**
  * @brief function table, mapping command type to handler.
  */
 void (*handle_messages[9])(online_users &, std::string, std::string, struct sockaddr_in &, uwe::socket &, bool &exit_loop) = {
-    handle_join, handle_jack, handle_broadcast, handle_directmessage,
-    handle_list, handle_leave, handle_lack, handle_exit, handle_error};
+    handle_join,
+    handle_jack,
+    handle_broadcast,
+    handle_directmessage,
+    handle_list,
+    handle_leave,
+    handle_lack,
+    handle_exit,
+    handle_error,
+};
 
 /**
  * @brief server for chat protocol
  */
 void server()
 {
+    group_members groups;
+
     // keep track of online users
     online_users online_users;
 
@@ -617,22 +657,25 @@ void server()
         // DEBUG("Received message:\n");
         if (len == sizeof(chat::chat_message))
         {
-            // handle incoming packet
             chat::chat_message *message = reinterpret_cast<chat::chat_message *>(buffer);
             auto type = static_cast<chat::chat_type>(message->type_);
             std::string username{(const char *)&message->username_[0]};
             std::string msg{(const char *)&message->message_[0]};
 
-            if (is_valid_type(type))
+            if (type == chat::CREATE_GROUP)
             {
-                DEBUG("handling msg type %d\n", type);
-                // valid type, so dispatch message handler
+                handle_creategroup(online_users, groups, username, msg, client_address, sock, exit_loop);
+            }
+            else if (chat::is_valid_type(type))
+            {
+                // Assuming your original dispatch mechanism here, which looks up the appropriate handler
+                // from the handle_messages array based on the message type.
                 handle_messages[type](online_users, username, msg, client_address, sock, exit_loop);
             }
-        }
-        else
-        {
-            DEBUG("Unexpected packet length\n");
+            else
+            {
+                // uknown message type
+            }
         }
     }
 }
