@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 #define USER_ALL "__ALL"
 #define USER_END "END"
@@ -24,6 +25,8 @@
 
 // ./chat_client "127.0.0.1" 1020 user1
 // ./chat_client "127.0.0.1" 1020 user1 2> debug.log
+
+// ./chat_client "127.0.0.1" 1040 user2 2> debug.log
 
 // /opt/iot/bin/packets_clear
 
@@ -687,6 +690,65 @@ void handle_creategroup(online_users &online_users, group_members &groups, user_
 }
 
 /**
+ * @brief
+ * @param
+ * @param
+ */
+
+void handle_add_to_group(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received addtogroup\n");
+
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if the user exists in online users
+    if (online_users.find(username) == online_users.end())
+    {
+        handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if user is already in the group
+    auto &members = groups[group_name];
+    if (std::find(members.begin(), members.end(), username) != members.end())
+    {
+        handle_error(ERR_USER_ALREADY_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Add user to the group
+    members.push_back(username);
+    user_groups[username] = group_name;
+
+    // Broadcast the message to all users in the group
+    std::string message = "Server: " + username + " has joined the group [" + group_name + "]";
+    for (const auto &member : members)
+    {
+        DEBUG("Message before send to %s: %s\n", member.c_str(), message.c_str());
+
+        auto member_it = online_users.find(member);
+        if (member_it != online_users.end() && member_it->second != nullptr)
+        { // Check if member is online
+            chat::chat_message msg = chat::broadcast_msg("Server", message);
+            ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&msg), sizeof(msg), 0, (sockaddr *)member_it->second, sizeof(struct sockaddr_in));
+            if (sent_bytes != sizeof(msg))
+            {
+                DEBUG("Failed to send message to user %s\n", member.c_str());
+            }
+        }
+        else
+        {
+            DEBUG("Member %s not found online\n", member.c_str());
+        }
+    }
+}
+
+/**
  * @brief function table, mapping command type to handler.
  */
 void (*handle_messages[9])(online_users &, std::string, std::string, struct sockaddr_in &, uwe::socket &, bool &exit_loop) = {
@@ -751,6 +813,7 @@ void server()
             auto type = static_cast<chat::chat_type>(message->type_);
             std::string username{(const char *)&message->username_[0]};
             std::string msg{(const char *)&message->message_[0]};
+            std::string group_name{(const char *)&message->groupname_[0]};
 
             if (type == chat::CREATE_GROUP)
             {
@@ -759,6 +822,13 @@ void server()
                 std::string group_name{(const char *)&message->groupname_[0]}; // Extract the group name from the message
                 handle_creategroup(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
             }
+            else if (type == chat::ADD_TO_GROUP)
+            {
+                std::string group_name = {(const char *)&message->groupname_[0]};
+                std::string username = {(const char *)&message->username_[0]};
+                handle_add_to_group(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
+            }
+
             else if (chat::is_valid_type(type))
             {
                 // Assuming your original dispatch mechanism here, which looks up the appropriate handler

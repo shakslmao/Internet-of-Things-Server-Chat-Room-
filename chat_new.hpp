@@ -119,12 +119,19 @@ namespace chat
 
     inline chat_message add_to_group(std::string group_name, std::string username)
     {
-        chat_message msg;
-        msg.type_ = ADD_TO_GROUP;
-        memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
-        msg.groupname_[group_name.length()] = '\0';
-        memcpy(&msg.username_[0], username.c_str(), username.length());
-        msg.message_[0] = '\0';
+        chat_message msg = {};
+        // Ensure we do not exceed buffer size - 1 to leave space for null terminator
+        size_t group_name_len = std::min(group_name.length(), sizeof(msg.groupname_) - 1);
+        size_t username_len = std::min(username.length(), sizeof(msg.username_) - 1);
+
+        memcpy(msg.groupname_, group_name.c_str(), group_name_len);
+        msg.groupname_[group_name_len] = '\0'; // Explicitly null-terminate
+        memcpy(msg.username_, username.c_str(), username_len);
+        msg.username_[username_len] = '\0'; // Explicitly null-terminate
+
+        msg.type_ = ADD_TO_GROUP; // Set the message type
+        msg.message_[0] = '\0';   // Explicitly null-terminate the message part
+
         return msg;
     }
 
@@ -251,5 +258,7 @@ namespace chat
 #define ERR_UNKNOWN_USERNAME 1
 #define ERR_UNEXPECTED_MSG 2
 #define ERR_GROUP_ALREADY_EXISTS 3
+#define ERR_USER_ALREADY_IN_GROUP 4
+#define ERR_GROUP_NOT_FOUND 5
 
 }; // namespace chat
