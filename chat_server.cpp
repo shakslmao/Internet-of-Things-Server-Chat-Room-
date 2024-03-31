@@ -1,12 +1,10 @@
 #include <map>
 // IOT socket api
 #include <iot/socket.hpp>
-
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
 // #include <chat.hpp>
 #include "chat_new.hpp"
 #include <iostream>
@@ -137,6 +135,7 @@ void handle_broadcast(online_users &online_users, std::string username, std::str
  */
 
 ///////////////////////////////////// WORKSHEET IMPLEMENTATION  //////////////////////////////////////////////////////
+/*
 void handle_join(
     online_users &online_users, std::string username, std::string,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
@@ -209,6 +208,83 @@ void handle_join(
         }
 
         // Optionally, send a list of all currently online users to the new user
+        handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
+    }
+}
+*/
+
+void handle_join(
+    online_users &online_users, std::string username,
+    std::string, struct sockaddr_in &client_address,
+    uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received join\n");
+
+    // Check if user is already online
+    if (online_users.find(username) != online_users.end())
+    {
+        handle_error(ERR_USER_ALREADY_ONLINE, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if the username is valid
+    if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
+    {
+        DEBUG("Invalid username encountered: %s\n", username.c_str());
+        handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+        return; // Early return on invalid username
+    }
+
+    // Allocate new sockaddr_in structure and copy the client address into it
+    sockaddr_in *client_addr = new sockaddr_in(client_address);
+
+    // Add the new user to the map
+    online_users[username] = client_addr;
+
+    // Send back a JACK message to the client that has joined
+    auto jack_message = chat::jack_msg();
+    ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&jack_message), sizeof(jack_message), 0,
+                                     (sockaddr *)&client_address, sizeof(client_address));
+
+    // Check if the JACK message was sent successfully
+    if (sent_bytes != sizeof(jack_message))
+    {
+        DEBUG("Failed to send JACK message to new user: %s\n", username.c_str());
+        delete client_addr;           // free the allocated memory
+        online_users.erase(username); // Remove the new user from the map
+    }
+    else
+    {
+        // Send a broadcast message to all other clients about the new join
+        chat::chat_message broadcast_msg = chat::broadcast_msg("Server", username + " has joined the chat.");
+        for (const auto &[user, addr] : online_users)
+        {
+            if (user != username) // Avoid sending the message to the user who just joined
+            {
+                sent_bytes = sock.sendto(reinterpret_cast<const char *>(&broadcast_msg), sizeof(broadcast_msg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+                if (sent_bytes != sizeof(broadcast_msg))
+                {
+                    DEBUG("Failed to send broadcast message to user %s\n", user.c_str());
+                }
+            }
+        }
+
+        // Get the current time
+        auto now = std::chrono::system_clock::now();
+        auto now_c = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream time_stream;
+        time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+
+        // Send a private welcome message to the new user
+        std::string welcome_msg = "Welcome to the chat, " + username + "! It is now " + time_stream.str();
+        chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
+        sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
+        if (sent_bytes != sizeof(priv_welcome_msg))
+        {
+            DEBUG("Failed to send private welcome message to new user\n");
+        }
+
         handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
     }
 }

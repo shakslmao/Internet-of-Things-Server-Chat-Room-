@@ -67,7 +67,7 @@ namespace chat
     inline bool is_valid_type(chat_type type)
     {
         // return type >= JOIN && type <= ERROR;
-        return type >= JOIN && type <= UNKNOWN;
+        return type >= JOIN && type <= ERROR;
     }
 
     /**
