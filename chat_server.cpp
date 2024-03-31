@@ -36,6 +36,9 @@
  */
 typedef std::map<std::string, sockaddr_in *> online_users;
 typedef std::map<std::string, std::vector<std::string>> group_members;
+typedef std::map<std::string, std::string> user_group_map;
+
+user_group_map user_groups;
 
 void handle_list(
     online_users &online_users, std::string username, std::string,
@@ -93,11 +96,15 @@ void handle_error(uint16_t err, struct sockaddr_in &client_address, uwe::socket 
  * @param sock socket for communicting with client
  * @parm exit_loop set to true if event loop is to terminate
  */
-void handle_broadcast(
-    online_users &online_users, std::string username, std::string msg,
-    struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+void handle_broadcast(online_users &online_users, std::string username, std::string msg, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received broadcast\n");
+
+    auto it = user_groups.find(username);
+    if (it != user_groups.end())
+    {
+        username += "[" + it->second + "]";
+    }
 
     // send message to all users, except the one we received it from
     for (const auto user : online_users)
@@ -106,7 +113,6 @@ void handle_broadcast(
         if (strcmp(inet_ntoa(client_address.sin_addr), inet_ntoa(user.second->sin_addr)) == 0 &&
             client_address.sin_port != user.second->sin_port)
         {
-            // send BC
             auto m = chat::broadcast_msg(username, msg);
             int len = sock.sendto(
                 reinterpret_cast<const char *>(&m), sizeof(chat::chat_message), 0,
@@ -572,7 +578,7 @@ void handle_error(
  * @param
  * @param
  */
-void handle_creategroup(online_users &online_users, group_members &groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+void handle_creategroup(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received creategroup\n");
     if (groups.find(group_name) != groups.end())
@@ -582,14 +588,16 @@ void handle_creategroup(online_users &online_users, group_members &groups, std::
     else
     {
         groups[group_name].push_back(username);
+        user_groups[username] = group_name;
 
         std::string created_message = username + " created a new group: " + group_name;
-        chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+        // chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
         for (const auto &user : online_users)
         {
             // Send the message to all users except the one who created the group
             if (user.first != username)
             {
+                chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
                 sock.sendto(reinterpret_cast<const char *>(&custom_msg), sizeof(custom_msg), 0, (sockaddr *)user.second, sizeof(struct sockaddr_in));
             }
         }
@@ -673,7 +681,7 @@ void server()
                 DEBUG("Raw username: %s, Raw group name: %s\n", (const char *)&message->username_[0], (const char *)&message->groupname_[0]);
                 std::string username{(const char *)&message->username_[0]};
                 std::string group_name{(const char *)&message->groupname_[0]}; // Extract the group name from the message
-                handle_creategroup(online_users, groups, username, group_name, client_address, sock, exit_loop);
+                handle_creategroup(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
             }
             else if (chat::is_valid_type(type))
             {

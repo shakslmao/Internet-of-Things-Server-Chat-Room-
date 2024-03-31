@@ -1,6 +1,5 @@
 DEBUG: chat_client.cpp:148:main(): Join message (s2-akram) sent, waiting for JACK
-DEBUG: chat_client.cpp:154:main(): Received jaDEBDEBUG: chat_client.cpp:225:main(): Received message from GUI
-DEBUG: chat_client.cpp:238:main(): DM sent to user1
-t message sent
-DEBUG: chat_client.cpp:225:main(): Received message from GUI
-DEBUG: chat_client.cpp:238:main(): DM sent to s2-akram
+DEBUG: chat_client.cpp:154:main(): Received jaDEBUG: chat_client.cpp:185:main(): Create group 'gang' message sent
+DEBUG: chat_client.cpp:244:main(): Broadcast message sent
+DEBUG: chat_client.cpp:204:main(): Received LEAVE from GUI
+DEBUG: chat_client.cpp:244:main(): Broadcast message sent
