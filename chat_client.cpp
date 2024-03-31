@@ -50,6 +50,8 @@ chat::chat_type to_type(std::string cmd)
         return chat::EXIT;
     case string_to_int("creategroup"): // to create a group
         return chat::CREATE_GROUP;
+    case string_to_int("addtogroup"): // to add a user to a group
+        return chat::ADD_TO_GROUP;
     default:
         return chat::UNKNOWN;
     }
@@ -187,6 +189,39 @@ int main(int argc, char **argv)
                             else
                             {
                                 DEBUG("Invalid creategroup command format\n");
+                            }
+                            break;
+                        }
+
+                        case chat::ADD_TO_GROUP:
+                        {
+                            if (cmds.size() > 2)
+                            {
+                                std::string group_name = cmds[1];
+                                std::string user_to_add = cmds[2];
+
+                                // Validate command input
+                                if (!group_name.empty() && !user_to_add.empty())
+                                {
+                                    chat::chat_message addtogroup_msg = chat::add_to_group(group_name, user_to_add);
+                                    ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&addtogroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                                    if (sent_bytes != sizeof(addtogroup_msg))
+                                    {
+                                        DEBUG("Error sending Add to Group message\n");
+                                    }
+                                    else
+                                    {
+                                        DEBUG("Add to Group message sent for user '%s' to group '%s'\n", user_to_add.c_str(), group_name.c_str());
+                                    }
+                                }
+                                else
+                                {
+                                    DEBUG("Invalid Add to Group command format\n");
+                                }
+                            }
+                            else
+                            {
+                                DEBUG("Invalid Add to Group command format\n");
                             }
                             break;
                         }
