@@ -1,3 +1,6 @@
 # iot_ws2_part2
 
-Your words go here...
+
+
+
+TASK 3. WAS. GOD. DAMN. PAINFUL. PAINFUL!.

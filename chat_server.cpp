@@ -653,9 +653,16 @@ void handle_error(
 }
 
 /**
- * @brief
- * @param
- * @param
+ * @brief Creates a new group with the specified name if it doesn't already exist, adds the creating user as the first member,
+ *        and broadcasts a creation message to all online users except the creator. If the group already exists, an error message is sent back.
+ *        Additionally, it sends a confirmation message to the creator. This function handles the creation of a new group,
+ *        ensuring that duplicate groups are not created, and properly notifies all relevant parties of the creation.
+ *
+ * @param online_users A reference to a map of online users, used to broadcast the group creation message.
+ * @param groups A reference to a map storing group names as keys and lists of member usernames as values. Used to check for existing groups and add the new group.
+ * @param user_groups A reference to a map where the key is a username and the value is the name of the group they belong to. Used to update the creating user's group membership.
+ * @param username The username of the user creating the group. This user is automatically added as a member of the new group.
+ * @param group_name The name of the group being created. The function checks to ensure no group with this name already exists.
  */
 void handle_creategroup(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
@@ -690,9 +697,17 @@ void handle_creategroup(online_users &online_users, group_members &groups, user_
 }
 
 /**
- * @brief
- * @param
- * @param
+ * INSTRUCTION: <addtogroup>:<groupname>:<user>
+ * @brief Adds a user to a specified group and broadcasts a message to all members of the group.
+ *        This function checks if both the group and user exist, if the user is already a member of the group,
+ *        and then proceeds to add the user to the group. It broadcasts a message to all online members of the group
+ *        notifying them of the new member. In case of any error (e.g., group not found, user not found, or user already in the group),
+ *        it sends an appropriate error message to the user.
+ * @param online_users A reference to a map of online users.
+ * @param groups A reference to a map where the key is a group name and the value is a list of member usernames.
+ * @param user_groups A reference to a map where the key is a username and the value is the name of the group they belong to.
+ * @param username The username of the user to be added to the group.
+ * @param group_name The name of the group to which the user is to be added.
  */
 
 void handle_add_to_group(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
@@ -744,6 +759,50 @@ void handle_add_to_group(online_users &online_users, group_members &groups, user
         else
         {
             DEBUG("Member %s not found online\n", member.c_str());
+        }
+    }
+}
+
+/**
+ * INSTRUCTION: <groupmsg>:<groupname>:<message>
+ * @brief Handles a group message, ensuring that the sender is a member of the group and then sending the message to all group members
+ * @param groups A reference to a map where each group name is mapped to a list of its members' usernames. Used to verify the group's existence and retrieve its members.
+ * @param user_groups A map associating usernames with the names of the groups they belong to. Used to validate that the sender is a member of the group they are trying to message.
+ * @param username The username of the sender of the group message. This function verifies that this user is a member of the group they are attempting to message.
+ * @param group_name The name of the group to which the message is being sent. This function checks to ensure the group exists before sending the message.
+ * @param message The content of the message to be sent to the group. This is the message that will be distributed to all online members of the group.
+ *
+ */
+void handle_group_message(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, std::string message, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received group message\n");
+
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Verify sender is a part of the group
+    if (user_groups.find(username) == user_groups.end() || user_groups[username] != group_name)
+    {
+        handle_error(ERR_USER_NOT_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Retrieve group members
+    auto &members = groups[group_name];
+
+    // Send message to all group members
+    for (const auto &member : members)
+    {
+        auto it = online_users.find(member);
+        if (it != online_users.end())
+        { // Member is online
+            chat::chat_message group_msg = chat::group_message(group_name, username, message);
+            sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)it->second, sizeof(struct sockaddr_in));
+            DEBUG("Group message sent to '%s' in group '%s'\n", member.c_str(), group_name.c_str());
         }
     }
 }
@@ -827,6 +886,13 @@ void server()
                 std::string group_name = {(const char *)&message->groupname_[0]};
                 std::string username = {(const char *)&message->username_[0]};
                 handle_add_to_group(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
+            }
+            else if (type == chat::GROUP_MESSAGE)
+            {
+                std::string group_name = {(const char *)&message->groupname_[0]};
+                std::string username = {(const char *)&message->username_[0]};
+                std::string msg = {(const char *)&message->message_[0]};
+                handle_group_message(online_users, groups, user_groups, username, group_name, msg, client_address, sock, exit_loop);
             }
 
             else if (chat::is_valid_type(type))

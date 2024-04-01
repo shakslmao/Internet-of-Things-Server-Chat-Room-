@@ -77,6 +77,34 @@ std::pair<std::thread, Channel<chat::chat_message>> make_receiver(uwe::socket *s
                                             // receive message from server
                                             // send it over channel (tx) to main UI thread
                                             ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
+                                            /*
+                                            if (recv_len > 0)
+                                            {
+
+                                                std::string group_name = std::string{(char *)msg.groupname_};
+                                                std::string sender_username = std::string{(char *)msg.username_};
+                                                std::string message_content = std::string{(char *)msg.message_};
+
+                                                // Construct the formatted message string
+                                                std::string formatted_text = "Group (" + group_name + ") " + sender_username + ": " + message_content;
+
+                                                // Create a new chat_message object to hold the formatted group message
+                                                chat::chat_message formatted_message;
+                                                formatted_message.type_ = msg.type_; // Preserving the original message type
+
+                                                // Safely copy the formatted text into the message_ field of formatted_message
+                                                std::strncpy(reinterpret_cast<char *>(formatted_message.message_), formatted_text.c_str(), MAX_MESSAGE_LENGTH - 1);
+                                                formatted_message.message_[MAX_MESSAGE_LENGTH - 1] = '\0'; // Ensure null termination
+
+                                                // Now, send the formatted_message instead of the original msg
+                                                tx.send(formatted_message);
+
+                                            }
+                                            else {
+                                                tx.send(msg);
+                                            }
+                                            */
+
                                             if (recv_len > 0)
                                             {
                                                 tx.send(msg);
@@ -272,6 +300,21 @@ int main(int argc, char **argv)
                             sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
                             DEBUG("DM sent to %s\n", recipient.c_str());
                         }
+                        else if (cmds.size() >= 3 && cmds[0] == "groupmsg")
+                        {
+                            // Group message handling code
+                            std::string group_name = cmds[1]; // Assume cmds[1] contains the group name
+                            // Reconstruct the message content from the remaining parts of cmds
+                            std::string message_content = cmds[2];
+                            for (size_t i = 3; i < cmds.size(); ++i)
+                            {
+                                message_content += " " + cmds[i];
+                            }
+                            // Construct and send the group message
+                            chat::chat_message group_msg = chat::group_message(group_name, username, message_content);
+                            sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+                            DEBUG("Group message sent to '%s'\n", group_name.c_str());
+                        }
                         else
                         {
                             chat::chat_message bc_msg = chat::broadcast_msg(username, cmds[0]);
@@ -339,6 +382,21 @@ int main(int argc, char **argv)
                         gui_tx.send(cmd);
                         break;
                     }
+
+                    case chat::GROUP_MESSAGE:
+                    {
+                        std::string msg = "group(";
+                        msg += std::string((char *)(*result).groupname_); // Append group name
+                        msg += ") ";
+                        msg += std::string((char *)(*result).username_); // Append username of the sender
+                        msg += ": ";
+                        msg += std::string((char *)(*result).message_); // Append the message content
+
+                        chat::display_command cmd{chat::GUI_CONSOLE, msg};
+                        gui_tx.send(cmd);
+                        break;
+                    }
+
                     case chat::LIST:
                     {
                         bool end = false;
