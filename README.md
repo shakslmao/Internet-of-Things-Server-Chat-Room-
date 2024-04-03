@@ -452,15 +452,28 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
 
 ## Task 3 Group Messaging (this was a headache...)
 
-**chat_new.hpp Implementation**
+## Create Group
+
+**Chat.hpp**
 ```cpp
- enum chat_type
+ inline chat_message create_group(std::string group_name, std::string username)
     {
-        CREATE_GROUP,     
-        ADD_TO_GROUP,     
-        GROUP_MESSAGE,   
-    };
+        chat_message msg;
+        msg.type_ = CREATE_GROUP;
+
+        // copied string does not exceed the buffer size, leaving space for null terminator
+        size_t group_name_length = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
+        memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
+        msg.groupname_[group_name.length()] = '\0'; // NULL terminate
+
+        size_t username_length = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
+        memcpy(&msg.username_[0], username.c_str(), username_length);
+        msg.username_[username_length] = '\0'; // NULL terminate
+        msg.message_[0] = '\0';
+        return msg;
+    }
 ```
+
 
 
 
