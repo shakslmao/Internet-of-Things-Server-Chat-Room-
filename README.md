@@ -43,7 +43,7 @@ if (online_users.find(username) != online_users.end())
 // chat.hpp: #define ERR_USER_ALREADY_ONLINE 0
 ```
 - Checks if the username already exists in the online_users map. If found, it sends an error response to the client and returns early. online_users.find(username): This line attempts to find the username in the map collection named that holds the usernames of all currently online users.
-- `if (online_users.find(username) != online_users.end())`: This condition checks if the iterator returned by `online_users.find(username)` is not equal to the end iterator of the `online_users` container. If it's not equal, it means the username was found in the container, indicating the user is already marked as online.
+- `if (online_users.find(username) != online_users.end())`: This condition checks if the iterator returned by `online_users.find(username)` is not equal to the end iterator of the `online_users` container. If its not equal, it means the username was found in the container, indicating the user is already marked as online.
 - `handle_error(ERR_USER_ALREADY_ONLINE, client_address, sock, exit_loop)`: If the user is already online, this line is executed to handle the error situation. The `handle_error` function is called with several arguments:
 `ERR_USER_ALREADY_ONLINE`: A preprocessor macro defined with the value 0, used as an error code indicating the specific error (user already online).
 
@@ -93,7 +93,15 @@ online_users[username] = client_addr;
     - `auto jack_message = chat::jack_msg()`: This line creates an instance of a join acknnowledgment message, known as `jack_message`. This message is created by calling the `jack_msg()` method on the `chat` namespace.
 - **Sending the JACK Message**:
     - ` ssize_t send_bytes`, This line attempts to send the `jack_message` to the new users network address. The `sendto` function is a socket operation that sends data to a specified network address.
-    
+        - `reinterpret_cast<const char *>(&jack_message)`: This casts the address of the jack_message to a pointer to `const char` as `sendto` expects a raw byte buffer.
+        - `sizeof(jack_message)`:  The size of the jack_message, indicating how many bytes to send.
+        - `0`: Flags parameter, set to 0 indicating no special behaviour.
+        - `(sockaddr *)&client_address`: A cast of the clients address to `sockaddr*`, specifying the destination address.
+        - `sizeof(client_address)`: The size of the clients address structure.
+        - The `sendto` function returns the number of bytes sent. This value is stored in `sent_bytes`.
+**Error Handling**
+
+
 
 
 
