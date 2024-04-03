@@ -134,7 +134,7 @@ online_users[username] = client_addr;
     - `reinterpret_cast<const char *>(&broadcast_msg)`: Converts the address of `broadcast_msg` to a const char*, as required by the `sendto` function.
     - `sizeof(broadcast_msg)`: The size of the message to be sent.
     - `0`: Flags parameter, here set to `0` for default behaviour.
-    - `(sockaddr *)addr`: The recipient's address cast to a `sockaddr*`. This is the address to which the message will be sent.
+    - `(sockaddr *)addr`: The recipients address cast to a `sockaddr*`. This is the address to which the message will be sent.
     - `sizeof(struct sockaddr_in)`: The size of the recipients address structure.
 
 **Error Handling**
@@ -186,7 +186,7 @@ void handle_directmessage(
 - `std::string message`: The raw message content, expected to include a recipient username, followed by a colon, and then the actual message.
 - `struct sockaddr_in &client_address`: A reference to the senders network address structure.
 - `uwe::socket &sock`: A reference to the socket object used for network communication.
-- `bool &exit_loop`: A reference to a boolean variable controlling the server's main event loop, not directly used in this function.
+- `bool &exit_loop`: A reference to a boolean variable controlling the servers main event loop, not directly used in this function.
 
 
 **Extract the Recipients Username and Message**
@@ -336,7 +336,7 @@ auto recipient_it = online_users.find(recipient_username);
 ```cpp
 ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
 ```
-- `sock->recvfrom`: Calls the recvfrom method on the socket object to receive data from the server. This method blocks the thread until a message arrives if there's no data currently available.
+- `sock->recvfrom`: Calls the recvfrom method on the socket object to receive data from the server. This method blocks the thread until a message arrives if theres no data currently available.
 - `reinterpret_cast<char *>(&msg):` Casts the address of msg to a `char*` pointer, as recvfrom expects a buffer of bytes to store the incoming data.
 - `sizeof(chat::chat_message)`: Specifies the size of the `chat::chat_message `structure, indicating how many bytes should be read and stored into msg
 - The function returns the length of the received message in bytes and stores this value in `recv_len`. If `recv_len` is greater than 0, it indicates that data has been successfully received.
@@ -402,8 +402,49 @@ case chat::LIST:
 - **Functionality**: Requests the current list of online users from the server.
 - **Operation**:
     - Logs the action of requesting the online user list.
-    - Constructs a LIST message using chat::list_msg().
+    - Constructs a `LIST` message using `chat::list_msg()`
     - Sends this message to the server, which should respond with a list of currently online users.
+
+**Default Case**
+```cpp
+default:
+{
+     // the default case is that the command is a username for DM
+     // <username> : message
+    if (cmds.size() == 2)
+    {
+        DEBUG("Received message from GUI\n");
+    }
+    break;
+}
+```
+- **Functionality**: Makes the input to be a DM to another users
+- **Operation**:
+    - Logs the reception of a message intended for another user.
+
+**Direct Message Handling**
+```cpp
+if (cmds.size() == 2 && type == chat::UNKNOWN)
+{
+    std::string recipient = cmds[0];
+    std::string content = cmds[1];
+    std::string dm_message = recipient + ":" + content;
+    chat::chat_message dm_msg = chat::dm_msg(username, dm_message);
+    sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(chat::chat_message), 
+            0, (sockaddr *)&server_address, sizeof(server_address));
+    DEBUG("DM sent to %s\n", recipient.c_str());
+}
+```
+- **Command Parsing**: The condition `if (cmds.size() == 2 && type == chat::UNKNOWN)` checks if the parsed command consists of two parts and if the command type is `UNKNOWN`. In this context, `UNKNOWN`  means that the command doesnt match any predefined actions (such as JOIN, LEAVE), allowing for a direct message where the first part is the recipients username and the second part is the message content.
+
+- **Recipient and Content Extraction**
+    - `std::string recipient = cmds[0];` retrieves the recipients username from the first part of the parsed command.
+    - `std::string content = cmds[1];` gets the actual message content intended for the recipient from the second part.
+
+
+
+
+
 
 
 
