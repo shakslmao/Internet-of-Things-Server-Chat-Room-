@@ -441,11 +441,16 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
     - `std::string recipient = cmds[0];` retrieves the recipients username from the first part of the parsed command.
     - `std::string content = cmds[1];` gets the actual message content intended for the recipient from the second part.
 
+- **Message Construction**:
+    - `std::string dm_message = recipient + ":" + content;` constructs the direct message string by appending the recipients username and the message content, separated by a colon.
+    - `chat::chat_message dm_msg = chat::dm_msg(username, dm_message)`; constructs a `chat::chat_message` object for the direct message. The function `chat::dm_msg` is used to create this message object.
+
+**Sending the Direct Message**
+    - The message is sent to the server using `sock.sendto`, which sends the constructed `dm_msg` object to the servers address.
+    - The se`ndto function arguments ensure that the message is correctly formatted as a byte array and sent to the correct server address and port.
 
 
-
-
-
+## Task 3 Group Messaging (This was hard...)
 
 
 
