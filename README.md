@@ -89,6 +89,12 @@ online_users[username] = client_addr;
         online_users.erase(username);
     }
 ```
+- **Creating the JACK Message**:
+    - `auto jack_message = chat::jack_msg()`: This line creates an instance of a join acknnowledgment message, known as `jack_message`. This message is created by calling the `jack_msg()` method on the `chat` namespace.
+- **Sending the JACK Message**:
+    - ` ssize_t send_bytes`, This line attempts to send the `jack_message` to the new users network address. The `sendto` function is a socket operation that sends data to a specified network address.
+    
+
 
 
 
