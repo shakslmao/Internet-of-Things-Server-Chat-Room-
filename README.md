@@ -536,25 +536,45 @@ void handle_creategroup(online_users &online_users, group_members &groups, user_
     - DEBUG("Received creategroup\n");: This logs the reception of a create group request for debugging purposes.
 
 - **Checking for Existing Groups**:
-```cpp
- if (groups.find(group_name) != groups.end())
-    {
-        handle_error(ERR_GROUP_ALREADY_EXISTS, client_address, sock, exit_loop);
-    }
-```
     - The function first checks if the requested `group_name` already exists in the `groups` container, if it finds that the group already exists, it calls the `handle_error` with the macro `ERR_GROUP_ALREADY_EXISTS` to handle this condition.
 
 - **Creating the New Group**:
+    - If the group does not exist, the function proceeds to create it by adding the username of the creator to the new groups member list in `groups[group_name]`.
+    - It also updates `user_groups` which maps users to their respective groups.
+
+- **Notifying all Online Users**
+    - The function constructs a message stating that the user has created a new group and iteratres over all `online_users` to broadcast this message.
+    - For each online user excpet the group creator, it sends a broadcast message using `sock.sendto` this sends a group creation notifcation to each user.
+
+- **Sending Confirmation to the Creator**:
+    - Finally, it sends a direct message (DM) to the group creator, confirming the successful creation of the group. This DM is sent using s`ock.sendto()` as well, targeting only the creators client address.
+
+**Client Implementation for Create Group**
 ```cpp
-groups[group_name].push_back(username);
-user_groups[username] = group_name;
+case string_to_int("creategroup"): // to create a group
+        return chat::CREATE_GROUP;
+
+case chat::CREATE_GROUP:
+{
+    if (cmds.size() > 1) {
+        std::string group_name = cmds[1];
+        chat::chat_message creategroup_msg = chat::create_group(group_name, username);
+        sock.sendto(reinterpret_cast<const char *>(&creategroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+        DEBUG("Create group '%s' message sent\n", group_name.c_str());
+    } else {
+    DEBUG("Invalid creategroup command format\n");
+    }
+    break;
+}
 ```
-    - If the group does not exist, the function proceeds to create it by adding the username of the creator to the new groups member list in groups[group_name].
-    
+
+- **Command Check**: The code starts by checking if the `cmds` has more than one element, this check ensures that the command to create a group is followed by at least one argument.
+- **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
+- **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
+- **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
 
 
-
-
+[![alt text]()]
 
 
 
