@@ -91,6 +91,7 @@ online_users[username] = client_addr;
 ```
 - **Creating the JACK Message**:
     - `auto jack_message = chat::jack_msg()`: This line creates an instance of a join acknnowledgment message, known as `jack_message`. This message is created by calling the `jack_msg()` method on the `chat` namespace.
+
 - **Sending the JACK Message**:
     - ` ssize_t send_bytes`, This line attempts to send the `jack_message` to the new users network address. The `sendto` function is a socket operation that sends data to a specified network address.
         - `reinterpret_cast<const char *>(&jack_message)`: This casts the address of the jack_message to a pointer to `const char` as `sendto` expects a raw byte buffer.
@@ -99,7 +100,14 @@ online_users[username] = client_addr;
         - `(sockaddr *)&client_address`: A cast of the clients address to `sockaddr*`, specifying the destination address.
         - `sizeof(client_address)`: The size of the clients address structure.
         - The `sendto` function returns the number of bytes sent. This value is stored in `sent_bytes`.
+
 **Error Handling**
+- The `if` condition checks if the number of bytes sent does not equal the size of the `jack_message`. This indicates that the message was not sent successfully.
+- `DEBUG`: If an error occurs, a debug message is logged indicating the failure to send the JACK message to the new user, with the username specified for clarity.
+`delete client_addr;`: If sending the message fails, this line deallocates the memory allocated for the users address information, cleaning up to prevent memory leaks.
+- `online_users.erase(username);`: Additionally, the username is removed from the `online_users` collection, reversing the registration since the join acknowledgment failed. This ensures the systems state remains consistent and does not consider the user as successfully joined.
+
+
 
 
 
