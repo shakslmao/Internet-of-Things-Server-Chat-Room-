@@ -77,34 +77,6 @@ std::pair<std::thread, Channel<chat::chat_message>> make_receiver(uwe::socket *s
                                             // receive message from server
                                             // send it over channel (tx) to main UI thread
                                             ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
-                                            /*
-                                            if (recv_len > 0)
-                                            {
-
-                                                std::string group_name = std::string{(char *)msg.groupname_};
-                                                std::string sender_username = std::string{(char *)msg.username_};
-                                                std::string message_content = std::string{(char *)msg.message_};
-
-                                                // Construct the formatted message string
-                                                std::string formatted_text = "Group (" + group_name + ") " + sender_username + ": " + message_content;
-
-                                                // Create a new chat_message object to hold the formatted group message
-                                                chat::chat_message formatted_message;
-                                                formatted_message.type_ = msg.type_; // Preserving the original message type
-
-                                                // Safely copy the formatted text into the message_ field of formatted_message
-                                                std::strncpy(reinterpret_cast<char *>(formatted_message.message_), formatted_text.c_str(), MAX_MESSAGE_LENGTH - 1);
-                                                formatted_message.message_[MAX_MESSAGE_LENGTH - 1] = '\0'; // Ensure null termination
-
-                                                // Now, send the formatted_message instead of the original msg
-                                                tx.send(formatted_message);
-
-                                            }
-                                            else {
-                                                tx.send(msg);
-                                            }
-                                            */
-
                                             if (recv_len > 0)
                                             {
                                                 tx.send(msg);

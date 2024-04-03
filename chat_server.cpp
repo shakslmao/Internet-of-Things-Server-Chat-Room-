@@ -137,88 +137,8 @@ void handle_broadcast(online_users &online_users, std::string username, std::str
  */
 
 ///////////////////////////////////// WORKSHEET IMPLEMENTATION  //////////////////////////////////////////////////////
-/*
 void handle_join(
-    online_users &online_users, std::string username, std::string,
-    struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
-{
-    DEBUG("Received join\n");
-
-    // first check user not already online
-    if (auto search = online_users.find(username); search != online_users.end())
-    {
-        handle_error(ERR_USER_ALREADY_ONLINE, client_address, sock, exit_loop);
-    }
-    else
-    {
-        // Allocate new sockaddr_in structure and copy the client address into it
-        sockaddr_in *new_user_address = new sockaddr_in;
-        memcpy(new_user_address, &client_address, sizeof(client_address));
-
-        // Check if the username is valid
-        if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
-        {
-            // Since no specific error code for invalid username, using ERR_UNKNOWN_USERNAME
-            DEBUG("Invalid username encountered: %s\n", username.c_str());
-            handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
-            return;
-        }
-        // Add the new user to the map
-        online_users[username] = new_user_address;
-
-        // Send back a JACK message to the client that has joined
-        auto jack_message = chat::jack_msg();
-        ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&jack_message), sizeof(jack_message), 0, (sockaddr *)&client_address, sizeof(client_address));
-
-        // Check if the JACK message was sent successfully
-        if (sent_bytes != sizeof(jack_message))
-        {
-            DEBUG("Failed to send JACK message to new user\n");
-            delete new_user_address;      // Free the memory allocated for the new user's address
-            online_users.erase(username); // Remove the new user from the map
-
-            return;
-        }
-
-        // Send a broadcast message to all other clients about the new join
-        chat::chat_message broadcast_msg = chat::broadcast_msg("Server", username + " has joined the chat.");
-        for (const auto &[user, addr] : online_users)
-        {
-            if (user != username) // Avoid sending the message to the user who just joined
-            {
-                sent_bytes = sock.sendto(reinterpret_cast<const char *>(&broadcast_msg), sizeof(broadcast_msg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
-                if (sent_bytes != sizeof(broadcast_msg))
-                {
-                    DEBUG("Failed to send broadcast message to user %s\n", user.c_str());
-                }
-            }
-        }
-
-        auto now = std::chrono::system_clock::now();
-        auto now_c = std::chrono::system_clock::to_time_t(now);
-
-        std::stringstream time_stream;
-        time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
-
-        // Send a private welcome message to the new user
-        std::string welcome_msg = "Welcome to the chat, " + username + "! It is now " + time_stream.str();
-        chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
-        sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
-        if (sent_bytes != sizeof(priv_welcome_msg))
-        {
-            DEBUG("Failed to send private welcome message to new user\n");
-        }
-
-        // Optionally, send a list of all currently online users to the new user
-        handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
-    }
-}
-*/
-
-void handle_join(
-    online_users &online_users, std::string username,
-    std::string, struct sockaddr_in &client_address,
-    uwe::socket &sock, bool &exit_loop)
+    online_users &online_users, std::string username, std::string, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
     DEBUG("Received join\n");
 
@@ -648,6 +568,7 @@ void handle_error(
 }
 
 /**
+ * INSTRUCTION:
  * @brief Creates a new group with the specified name if it doesn't already exist, adds the creating user as the first member,
  *        and broadcasts a creation message to all online users except the creator. If the group already exists, an error message is sent back.
  *        Additionally, it sends a confirmation message to the creator. This function handles the creation of a new group,

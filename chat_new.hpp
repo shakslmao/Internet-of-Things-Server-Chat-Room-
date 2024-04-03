@@ -106,8 +106,8 @@ namespace chat
         // copied string does not exceed the buffer size, leaving space for null terminator
         size_t group_name_length = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
         memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
-        msg.groupname_[group_name.length()] = '\0'; // NULL terminate
-
+        msg.groupname_[group_name_length] = '\0'; // NULL terminate
+        
         size_t username_length = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
         memcpy(&msg.username_[0], username.c_str(), username_length);
         msg.username_[username_length] = '\0'; // NULL terminate
