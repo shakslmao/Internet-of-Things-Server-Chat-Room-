@@ -127,10 +127,16 @@ online_users[username] = client_addr;
     - `chat::chat_message broadcast_msg = chat::broadcast_msg()`: A message is created using `broadcast_msg` function, this function takes two arguments, a sender "Sever" and the messasge content. The result is stored in  a `broadcast_msg`.
 - **Iterating Over Online Users**:
     - The `for` loop iterates over each entry in the `online_users` collection, which maps usernames to their network address. This holds the current state of users who are considered online.
-- **Sending the Message to Each User:
+- **Sending the Message to Each User**:
     - Within the loop, theres a check to ensure that the new user (the one who just joined) does not receive their own join notification: `if (user != username).`
-    - 
+    - `reinterpret_cast<const char *>(&broadcast_msg)`: Converts the address of `broadcast_msg` to a const char*, as required by the `sendto` function.
+    - `sizeof(broadcast_msg)`: The size of the message to be sent.
+    - `0`: Flags parameter, here set to `0` for default behaviour.
+    - `(sockaddr *)addr`: The recipient's address cast to a `sockaddr*`. This is the address to which the message will be sent.
+    - `sizeof(struct sockaddr_in)`: The size of the recipients address structure.
 
+**Error Handling**
+- After attempting to sedn the message, the code checks if the number of bytes sent matches the expected size, if the message size does not match, this indactes an error in sending the message.
 
 
 
