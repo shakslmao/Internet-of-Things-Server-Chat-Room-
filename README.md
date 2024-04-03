@@ -742,9 +742,11 @@ case chat::ADD_TO_GROUP:
 
 **Futher Validation**: Verifies that neither the group nor the username to add is empty, this additonal check ensures that the command contains valid params.
 
-- **Create and Send `Add to Group` Message:
+- **Create and Send `Add to Group` Message**:
     - If the command and its arguments are valid, it creates an "Add to Group" message using the `chat::add_to_group `function. 
     - The message is then sent over the network using `sock.sendto()`, targeting the servers address. Allowing the server to process this command, updating group memberships, and notifying the group members of the change.
+
+![alt text](/images/)
 
 
 
