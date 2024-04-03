@@ -167,7 +167,7 @@ online_users[username] = client_addr;
 -  `std::stringstream` named `time_stream` is used to format the current time into a readable string.
 -  `time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S")`: Inserts the formatted current time into `time_stream`. The format specified by %Y-%m-%d %H:%M:%S corresponds to "Year-Month-Day Hour:Minute:Second".
 
-**Creating and Sending the Welcome Message:
+**Creating and Sending the Welcome Message**:
 - Welcome message constructed by concatenating a greeting with the username and the formatted current time.
 - `chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg)`: Creates a direct message (dm_msg) from the "Server" to the new user, containing the welcome message.
 - The message is sent using `sock.sendto`, similar to the previously described broadcast process. This function sends the `priv_welcome_msg` to the `client_address`, which is the network address of the new user.
