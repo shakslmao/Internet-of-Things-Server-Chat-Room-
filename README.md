@@ -174,6 +174,16 @@ online_users[username] = client_addr;
 ![alt text](/images/screenshotjoin.png)
 
 
+## void_handle_directmessage():
+**Function Signature**:
+```cpp
+void handle_directmessage(
+    online_users &online_users, std::string username, std::string message,
+    struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop);
+```
+
+
+
 
 
 
