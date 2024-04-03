@@ -189,7 +189,7 @@ void handle_directmessage(
 - `bool &exit_loop`: A reference to a boolean variable controlling the server's main event loop, not directly used in this function.
 
 
-**Extract the Recipients Useranme and Message**
+**Extract the Recipients Username and Message**
 ```cpp
 std::size_t colon_pos = message.find(':');
     if (colon_pos == std::string::npos)
@@ -212,7 +212,7 @@ std::size_t colon_pos = message.find(':');
 - The `if` statetemnt checks if the `colon_pos` equals `std::string::npos`, which would mean no colon was found in the message, indicating an invalid dm format.
 - If the formot is invalid, a debug messasge is logged using the `DEBUG` macro to indicate the issue, inclduding the recieved message.
 
-**Extracting the Recipients Useranme and Message**
+**Extracting the Recipients Username and Message**
 - if the colon is found, which indicates a potentially valid format, the code proceeds to extract the recipients username and the message content.
 - `std::string recipient_username = message.substr(0, colon_pos);`: This line extracts the substring from the start of the message up to (but not including) the colon position.
 - `std::string actual_message = message.substr(colon_pos + 1);`: This line extracts the substring starting just after the colon to the end of the message string. 
@@ -226,6 +226,42 @@ std::size_t colon_pos = message.find(':');
         return;
     }
 ```
+**Finding the Sender in `online_users`**:
+- `auto sender_it = online_users.find(username);`: This line attempts to find the username in the `online_users` map, which keeps track of users currently online. The find method returns an iterator to the element if the key (username) is found, otherwise, it returns an iterator to the end of the map (`online_users.end()`).
+
+**Verifying the Senders Address**
+- The `if` statement checks two conditions to verify the sender:
+    - `sender_it == online_users.end()`: This condiiton checks if the iterator points to the end of the map, which would indicate that the `username` was not found amongst online users. If this was true, it means the sender is not recognised as currently online.
+    - `sender_it->second->sin_addr.s_addr != client_address.sin_addr.s_addr`: This condition checks if the senders IP address recorded in the map does not match the iP address from the `client_address` of the current message. The `sender_it->second` part derefernces the iterator to access the value, and then `sin_addr.s_addr` is compared between the stored address and the `client_address`.
+
+**Handling a Non-Verified Sender**
+- `DEBUG`: If the sender cannot be verified (not found in the map, or IP mismatch) a debug message is logged indicating that the sender was not found.
+
+**Send the DM**
+```cpp
+auto recipient_it = online_users.find(recipient_username);
+    if (recipient_it != online_users.end())
+    {
+        DEBUG("Sending DM to %s\n", recipient_username.c_str());
+
+        chat::chat_message dm_msg = chat::dm_msg(username, actual_message);
+        ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(dm_msg), 
+                        0, (sockaddr *)recipient_it->second, sizeof(struct sockaddr_in));
+
+        if (sent_bytes != sizeof(dm_msg))
+        {
+            DEBUG("Failed to send DM to %s\n", recipient_username.c_str());
+        }
+    }
+    else
+    {
+        DEBUG("Recipient %s not found\n", recipient_username.c_str());
+        chat::chat_message err_msg = chat::error_msg(ERR_UNKNOWN_USERNAME);
+        sock.sendto(reinterpret_cast<const char *>(&err_msg), sizeof(err_msg), 0, 
+                            (sockaddr *)&client_address, sizeof(client_address));
+    }
+```
+
 
 
 
