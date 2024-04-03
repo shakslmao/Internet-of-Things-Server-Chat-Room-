@@ -1,7 +1,2 @@
-DEBUG: chat_client.cpp:178:main(): Join message (user2) sent, waiting for JACK
+DEBUG: chat_client.cpp:178:main(): Join message (s2-akram) sent, waiting for JACK
 DEBUG: chat_client.cpp:184:main(): Received jack
-DEBUG: chat_client.cpp:242:main(): Add to Group message sent for user 'suer2' to group 'gang'
-DEBUG: chat_client.cpp:322:main(): Broadcast message sent
-DEBUG: chat_client.cpp:242:main(): Add to Group message sent for user 'user2' to group 'gang'
-DEBUG: chat_client.cpp:322:main(): Broadcast message sent
-DEBUG: chat_client.cpp:316:main(): Group message sent to 'gang'

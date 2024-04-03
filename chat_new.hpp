@@ -49,8 +49,8 @@ namespace chat
         DIRECTMESSAGE,
         CREATE_GROUP,      // Implemented
         ADD_TO_GROUP,      // Implemented
-        GROUP_MESSAGE,     // TODO
-        REMOVE_FROM_GROUP, // TODO
+        GROUP_MESSAGE,     // Implemented
+        REMOVE_FROM_GROUP, // CBA.
         LIST,
         LEAVE,
         LACK,
