@@ -581,6 +581,37 @@ case chat::CREATE_GROUP:
 
 ## Add Users to Group
 
+**Header Implementation**
+- The add_to_group function is crafted to prepare a chat_message structure that signifies a request or command to add a user to a group within a chat application.
 
+```cpp
+ inline chat_message add_to_group(std::string group_name, std::string username)
+    {
+        chat_message msg = {};
+        // Ensure we do not exceed buffer size - 1 to leave space for null terminator
+        size_t group_name_len = std::min(group_name.length(), sizeof(msg.groupname_) - 1);
+        size_t username_len = std::min(username.length(), sizeof(msg.username_) - 1);
 
+        memcpy(msg.groupname_, group_name.c_str(), group_name_len);
+        msg.groupname_[group_name_len] = '\0'; // Explicitly null-terminate
+        memcpy(msg.username_, username.c_str(), username_len);
+        msg.username_[username_len] = '\0'; // Explicitly null-terminate
 
+        msg.type_ = ADD_TO_GROUP; // Set the message type
+        msg.message_[0] = '\0';   // Explicitly null-terminate the message part
+
+        return msg;
+    }
+```
+- **Initialise `chat_message` object:
+    - `chat_message msg = {};` initialises `msg` with default values, ensuring all fields are set to their default state (numeric fields to 0, pointers to nullptr, and arrays to zeroed bytes).
+
+- **Prepare `group_name` and `username` Strings**:
+    - The lengths of `group_name` and `username` are calculated using` std::min` to ensure they do not exceed the buffer size reserved for them in `msg`. This step is critical to avoid writing past the end of the buffers, which could lead to undefined behavior.
+    - `- 1` in the calculation `(sizeof(msg.groupname_) - 1` and `sizeof(msg.username_) - 1)` ensures theres space left for the null terminator, a requirement for C-style strings.
+
+- **Copy the Strings into `chat_message`:
+    - `memcpy(msg.groupname_, group_name.c_str(), group_name_len)`; copies `group_name_len` bytes of `group_name` into `msg.groupname_.`.
+    - `memcpy(msg.username_, username.c_str(), username_len);` similarly copies `username_len` bytes of `username` into `msg.username_.`.
+    - Both `groupname_` and `username_` fields are explicitly null terminated after copying. This  nul-termination is important because `memcpy` does not null-terminate the buffer.
+    
