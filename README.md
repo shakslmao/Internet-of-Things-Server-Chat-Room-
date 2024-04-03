@@ -68,5 +68,28 @@ if (online_users.find(username) != online_users.end())
     - `ERR_UNKNOWN_USERNAME`: An error code indicating the specific error condition (unknown or invalid username). A preprocessor macro defined with the value 1, used to define that the given username is not known.
 - `return`: This statement causes an early return from the function if an invalid username is encountered, preventing any further action or processing for this particular client request.
 
+**Register a new User**
+```cpp
+sockaddr_in *client_addr = new sockaddr_in(client_address);
+online_users[username] = client_addr;
+```
+- `sockaddr_in *client_addr = new sockaddr_in(client_address);`: This line creates a new instance of `sockaddr_in`, which is a structure used to store the internet address. The `new` keyword dynamically allocates memory for this structure and initialises it with the value of `client_address`, which contains the address information of the new users connection. The result is a pointer to this dynamically allocated address structure, stored in `client_addr`.
+- `online_users[username] = client_addr`: This line adds the new user to a collection that tracks which users are currently online and their associated network address information. The key for this collection is the user `username`, and the value is the pointer to the `sockaddr_in` structure. This effectively registers the user as online and allows the system to keep track of the users network address.
+
+**Send Join Acknnowledgment (JACK)**
+```cpp
+    auto jack_message = chat::jack_msg();
+    ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&jack_message), 
+                sizeof(jack_message), 0,(sockaddr *)&client_address, sizeof(client_address));
+
+    if (sent_bytes != sizeof(jack_message))
+    {
+        DEBUG("Failed to send JACK message to new user: %s\n", username.c_str());
+        delete client_addr;           
+        online_users.erase(username);
+    }
+```
+
+
 
 
