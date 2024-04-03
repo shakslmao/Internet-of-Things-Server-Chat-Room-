@@ -20,5 +20,9 @@ online_users &online_users, std::string username,
     std::string, struct sockaddr_in &client_address,
     uwe::socket &sock, bool &exit_loop) {}
 ```
+- **online_users &online_users**: A reference to the map that tracks the online status of clients, the key is is the username, and the value is a pointer to a `sockaddr_in` a structure representing the clients address.
+typedef std::map<std::string, sockaddr_in *> online_users; 
+
+
 
 
