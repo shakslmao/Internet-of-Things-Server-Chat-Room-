@@ -684,5 +684,56 @@ void handle_add_to_group(online_users &online_users, group_members &groups, user
 - Checks if the username exists in the `online_users` map. If the user is not found, `handle_error` is called with `ERR_UNKNOWN_USERNAME`, indicating the user is not recognised as online, and the function exits early.
 
 **Is User Already a Member? Check**
+- Checks if the user is already a member of the specified group by searching the groups member list. If the user is found, it calls `handle_error` with `ERR_USER_ALREADY_IN_GROUP` and returns early, preventing duplicate group entry.
+
+**Adding the User to the Group**
+- If all checks pass, the user is added to the groups member list, and the `user_groups` mapping is updated to reflect the new group membership for the user.
+
+**Broadcasting the Join**
+- Constructs a message indicating that the user has joined the group and iterates over all group members to send this notification.
+- For each member, it first checks if they are online. If they are, it sends the message using `sock.sendto(`). This ensures that only online members are notified.
+- Utilises debug logging to confirm message and to log failures or issues.
+
+
+**Client Implementation of Add to Group**
+```cpp
+case string_to_int("addtogroup"): // to add a user to a group
+    return chat::ADD_TO_GROUP;
+
+case chat::ADD_TO_GROUP:
+{
+    if (cmds.size() > 2) 
+    {
+        std::string group_name = cmds[1];
+        std::string user_to_add = cmds[2];
+
+        // Validate command input
+        if (!group_name.empty() && !user_to_add.empty())
+        {
+            chat::chat_message addtogroup_msg = chat::add_to_group(group_name, user_to_add);
+            size_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&addtogroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+            if (sent_bytes != sizeof(addtogroup_msg))
+            {
+                DEBUG("Error sending Add to Group message\n");
+            }
+            else
+            {
+            DEBUG("Add to Group message sent for user '%s' to group '%s'\n", user_to_add.c_str(), group_name.c_str());
+            }
+        }
+        else
+        {
+            DEBUG("Invalid Add to Group command format\n");
+        }
+    }
+    else
+    {
+        DEBUG("Invalid Add to Group command format\n");
+    }
+    break;
+}
+```
+
+
 
     
