@@ -125,8 +125,10 @@ online_users[username] = client_addr;
 ```
 - **Creating the Broadcast Message**
     - `chat::chat_message broadcast_msg = chat::broadcast_msg()`: A message is created using `broadcast_msg` function, this function takes two arguments, a sender "Sever" and the messasge content. The result is stored in  a `broadcast_msg`.
+
 - **Iterating Over Online Users**:
     - The `for` loop iterates over each entry in the `online_users` collection, which maps usernames to their network address. This holds the current state of users who are considered online.
+
 - **Sending the Message to Each User**:
     - Within the loop, theres a check to ensure that the new user (the one who just joined) does not receive their own join notification: `if (user != username).`
     - `reinterpret_cast<const char *>(&broadcast_msg)`: Converts the address of `broadcast_msg` to a const char*, as required by the `sendto` function.
@@ -137,6 +139,39 @@ online_users[username] = client_addr;
 
 **Error Handling**
 - After attempting to sedn the message, the code checks if the number of bytes sent matches the expected size, if the message size does not match, this indactes an error in sending the message.
+
+**Sending a Private Welcome Message to New User**
+```cpp
+ auto now = std::chrono::system_clock::now();
+        auto now_c = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream time_stream;
+        time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+
+        std::string welcome_msg = "Welcome to the chat, " + username + "! It is now " + time_stream.str();
+        chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg);
+        sent_bytes = sock.sendto(reinterpret_cast<const char *>(&priv_welcome_msg), sizeof(priv_welcome_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
+        if (sent_bytes != sizeof(priv_welcome_msg))
+        {
+            DEBUG("Failed to send private welcome message to new user\n");
+        }
+
+        handle_list(online_users, "__ALL", "", client_address, sock, exit_loop);
+```
+
+**Getting Current Time**
+- `auto now = std::chrono::system_clock::now()`: Captures the current time point using the system clock.
+- `auto now_c = std::chrono::system_clock::to_time_t(now)`: Converts the time point to a `time_t` type, which represents the time in seconds since the Unix epoch.
+
+**Formatting the Time**
+-  `std::stringstream` named `time_stream` is used to format the current time into a readable string.
+-  `time_stream << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S")`: Inserts the formatted current time into `time_stream`. The format specified by %Y-%m-%d %H:%M:%S corresponds to "Year-Month-Day Hour:Minute:Second".
+
+**Creating and Sending the Welcome Message:
+- Welcome message constructed by concatenating a greeting with the username and the formatted current time.
+- `chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg)`: Creates a direct message (dm_msg) from the "Server" to the new user, containing the welcome message.
+- The message is sent using `sock.sendto`, similar to the previously described broadcast process. This function sends the `priv_welcome_msg` to the `client_address`, which is the network address of the new user.
+
 
 
 
