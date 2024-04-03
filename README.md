@@ -325,6 +325,33 @@ auto recipient_it = online_users.find(recipient_username);
 
 
 ## Task 2 Client Side
+- **Objective**: Implement and enhance the clients ability to interact with a chat server, handle user inputs, display messages and manage the state of the chat session effectively.
+- **Key Components**: 
+    - Network and Communication, establishing and managing UDP socket connection with the server.
+    - Send and recieve messages using the socket, including handling different types of chat commands.
+    - Implement functions to create and send various types of messages to the server, such as join, leave, direct message, create group, add to group, etc.
+    - Implement a receiver thread that listens for incoming messages from the server without blocking the main thread or UI.
+
+**Message Reception**
+```cpp
+ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
+```
+- `sock->recvfrom`: Calls the recvfrom method on the socket object to receive data from the server. This method blocks the thread until a message arrives if there's no data currently available.
+- `reinterpret_cast<char *>(&msg):` Casts the address of msg to a `char*` pointer, as recvfrom expects a buffer of bytes to store the incoming data.
+- `sizeof(chat::chat_message)`: Specifies the size of the `chat::chat_message `structure, indicating how many bytes should be read and stored into msg
+- The function returns the length of the received message in bytes and stores this value in `recv_len`. If `recv_len` is greater than 0, it indicates that data has been successfully received.
+
+**Sending Message to Main UI thread**
+```cpp
+if (recv_len > 0)
+{
+    tx.send(msg);
+}
+```
+- After successfully receiving a message, the received` chat::chat_message` object `msg` is sent to the main UI thread using the `tx` channel.
+- `tx.send(msg)`: Sends the `msg` object through the channel to what is listening on the other end of this channel.
+
+
 
 
 
