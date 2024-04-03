@@ -351,27 +351,59 @@ if (recv_len > 0)
 - After successfully receiving a message, the received` chat::chat_message` object `msg` is sent to the main UI thread using the `tx` channel.
 - `tx.send(msg)`: Sends the `msg` object through the channel to what is listening on the other end of this channel.
 
+
 **Case `chat::EXIT`**
 ```cpp
-   case chat::EXIT:
-                        {
-                            DEBUG("Received Exit from GUI\n");
-                            // Send EXIT message to the server
-                            chat::chat_message exit_msg = chat::exit_msg();
-                            sock.sendto(reinterpret_cast<const char *>(&exit_msg), sizeof(chat::chat_message),
-                                            0, (sockaddr *)&server_address, sizeof(server_address));
-                            exit_loop = true;
-                            break;
-                        }
+case chat::EXIT:
+{
+    DEBUG("Received Exit from GUI\n");
+    chat::chat_message exit_msg = chat::exit_msg();
+    sock.sendto(reinterpret_cast<const char *>(&exit_msg), sizeof(chat::chat_message),
+            0, (sockaddr *)&server_address, sizeof(server_address));
+    exit_loop = true;
+    break;
+}
 ```
+- **Functionality**: This case is triggered when the user decides to exit the chat app.
+- **Operation**:
+    - Logs the reception of an `EXIT` command from the GUI for debugging.
+    - Constructs an `EXIT` message `using chat::exit_msg()` to notify the server of the clients intention to disconnect.
+    - sends the `EXIT` message to the server.
+    - Sets `exit_loop` to true, indicating the main event loop should terminate, closing the client application.
 
+**Case `chat::LEAVE`**
+```cpp
+case chat::LEAVE:
+{
+    DEBUG("Received LEAVE from GUI\n");
+    chat::chat_message leave_msg = chat::leave_msg();
+    sock.sendto(reinterpret_cast<const char *>(&leave_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    sent_leave = true;
+    break;
+}
+```
+- **Functionality**:Handles the scenario where the user wants to leave the chat but not necessarily close the application.
+- **Operation**:
+    - Logs the reception of a `LEAVE` command.
+    - Constructs a `LEAVE` message using `chat::leave_msg().`
+    - Sends the `LEAVE` message to the server, informing it that the user wishes to disconnect from the chat session but not exit the application.
+    - Sets `sent_leave` to true, a flag indicating that a leave message has been sent.
 
-
-
-
-
-
-
+**Case `chat::LIST`:
+```cpp
+case chat::LIST:
+{
+    DEBUG("Received LIST from GUI\n");
+    chat::chat_message list_msg = chat::list_msg();
+    sock.sendto(reinterpret_cast<const char *>(&list_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    break;
+}
+```
+- **Functionality**: Requests the current list of online users from the server.
+- **Operation**:
+    - Logs the action of requesting the online user list.
+    - Constructs a LIST message using chat::list_msg().
+    - Sends this message to the server, which should respond with a list of currently online users.
 
 
 
