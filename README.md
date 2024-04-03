@@ -532,6 +532,26 @@ void handle_creategroup(online_users &online_users, group_members &groups, user_
     }
 }
 ```
+- **Logging The Recieved Request**:
+    - DEBUG("Received creategroup\n");: This logs the reception of a create group request for debugging purposes.
+
+- **Checking for Existing Groups**:
+```cpp
+ if (groups.find(group_name) != groups.end())
+    {
+        handle_error(ERR_GROUP_ALREADY_EXISTS, client_address, sock, exit_loop);
+    }
+```
+    - The function first checks if the requested `group_name` already exists in the `groups` container, if it finds that the group already exists, it calls the `handle_error` with the macro `ERR_GROUP_ALREADY_EXISTS` to handle this condition.
+
+- **Creating the New Group**:
+```cpp
+groups[group_name].push_back(username);
+user_groups[username] = group_name;
+```
+    - If the group does not exist, the function proceeds to create it by adding the username of the creator to the new groups member list in groups[group_name].
+    
+
 
 
 
