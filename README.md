@@ -303,12 +303,12 @@ auto recipient_it = online_users.find(recipient_username);
     - The `for` loop iterates through each entry in the `online_users` collection. Each entry consists of a users username  and their network address information (addr). 
 
 **Sending the Exit Messasge to Each User**
-    - Inside the loop, the `sendto` function is used to send the exit message to the address associated with each user:
-        - `reinterpret_cast<const char *>(&exit_message)`: This casts the address of the `exit_message` object to a const char*, which is necessary because `sendto` requires a byte buffer as its input.
-        - `sizeof(exit_message)`: Specifies the size of the exit message to be sent.
-        - 0: The flags parameter, set to 0 for no special behavior.
-        - `(sockaddr *)addr`: Casts the users address to a `sockaddr*`, which `sendto` requires to specify the destination address.
-        - `sizeof(struct sockaddr_in):` Provides the size of the address structure, ensuring the correct amount of address data is used by sendto.
+- Inside the loop, the `sendto` function is used to send the exit message to the address associated with each user:
+    - `reinterpret_cast<const char *>(&exit_message)`: This casts the address of the `exit_message` object to a const char*, which is necessary because `sendto` requires a byte buffer as its input.
+    - `sizeof(exit_message)`: Specifies the size of the exit message to be sent.
+    - `0`: The flags parameter, set to 0 for no special behavior.
+    - `(sockaddr *)addr`: Casts the users address to a `sockaddr*`, which `sendto` requires to specify the destination address.
+    - `sizeof(struct sockaddr_in):` Provides the size of the address structure, ensuring the correct amount of address data is used by sendto.
 
 **Memory Cleanup for Online Users**
 ```cpp
@@ -319,6 +319,12 @@ auto recipient_it = online_users.find(recipient_username);
     online_users.clear();
     exit_loop = true;
 ```
+- The for loop iterates over each entry in the `online_users` map. Each entry contains a pair where the first element is the users identifier and the second element is a pointer to dynamically allocated memory.
+- `delete user.second;`: For each user, this line deallocates the memory pointed to by the second element of the pair. This is necessary to prevent memory leaks, ensuring that all dynamically allocated resources are properly released when they're no longer needed.
+- `online_users.clear()`: After deallocating the memory for each user, this line clears the `online_users` container, removing all its elements. This step ensures that the container is left in a clean state, with no dangling pointers.
+
+
+## Task 2 Client Side
 
 
 
