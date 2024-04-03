@@ -452,30 +452,86 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
 
 ## Task 3 Group Messaging (this was a headache...)
 
-## Create Group
+### Create Group
 
-**Chat.hpp**
+**Header Implementation for Create Group**
 ```cpp
- inline chat_message create_group(std::string group_name, std::string username)
-    {
-        chat_message msg;
-        msg.type_ = CREATE_GROUP;
+enum type {
+    CREATE_GROUP
+}
 
-        // copied string does not exceed the buffer size, leaving space for null terminator
-        size_t group_name_length = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
-        memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
-        msg.groupname_[group_name.length()] = '\0'; // NULL terminate
+inline chat_message create_group(std::string group_name, std::string username)
+{
+    chat_message msg;
+    msg.type_ = CREATE_GROUP;
 
-        size_t username_length = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
-        memcpy(&msg.username_[0], username.c_str(), username_length);
-        msg.username_[username_length] = '\0'; // NULL terminate
-        msg.message_[0] = '\0';
-        return msg;
-    }
+    // copied string does not exceed the buffer size, leaving space for null terminator
+    size_t group_name_length = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
+    memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
+    msg.groupname_[group_name.length()] = '\0'; // NULL terminate
+
+    size_t username_length = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
+    memcpy(&msg.username_[0], username.c_str(), username_length);
+    msg.username_[username_length] = '\0'; // NULL terminate
+    msg.message_[0] = '\0';
+    return msg;
+}
 ```
+The function `create_group` constructs a `chat_message` object for the creation of a new group chat. The message includes the group names and the user of the creating the group. The function ensures that the data copied into the message buffer does nto exceed the predefined limits, avoiding buffer overflow issues.
 
+- **Initalise `chat_message` object:
+    - A new `chat_message` object `msg` is created and its `type_` field is set to `CREATE_GROUP`. This indicates the type of message and the command to create a new group
 
+- **Handle Group Name**:
+    - The function calculates the length of the `group_name` string to ensure it does not exceed `MAX_GROUPNAME_LENGTH` - 1. This calculation is crucial to avoid buffer overflows and ensure theres space for a null terminator ('\0') at the end of the string.
+    - It then copies the `group_name` into the msg.`groupname_` field using `memcpy`.
+    - The group name in the message is null-terminated to ensure it's a valid C-style string.
 
+- **Handle Username**:
+    - Similarly, it calculates the length of the username string, ensuring it does not exceed `MAX_USERNAME_LENGTH` - 1. This is again to prevent buffer overflow and allow for a null terminator.
+    - The username is copied into the `msg.username_` field using `memcpy`,
+    - The username is also null-terminated to ensure it's a valid C-style string.
+
+- **Initalise Message Field**
+    - The function sets the first character of the `msg.message_` field to '\0`, so that it doesnt carry any additional messages beyond the create group command.
+
+- **Return the Prepared Message**:
+    - Finally, the function returns the `msg` object, it is set up to represent a command to create a new group chat.
+
+**Server Implementation for Create Group**
+```cpp
+void handle_creategroup(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received creategroup\n");
+    if (groups.find(group_name) != groups.end())
+    {
+        handle_error(ERR_GROUP_ALREADY_EXISTS, client_address, sock, exit_loop);
+    }
+    else
+    {
+        groups[group_name].push_back(username);
+        user_groups[username] = group_name;
+
+        std::string created_message = username + " created a new group: " + group_name;
+        // chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+        for (const auto &user : online_users)
+        {
+            // Send the message to all users except the one who created the group
+            if (user.first != username)
+            {
+                chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+                sock.sendto(reinterpret_cast<const char *>(&custom_msg), sizeof(custom_msg), 0, (sockaddr *)user.second, sizeof(struct sockaddr_in));
+            }
+        }
+        DEBUG("Username: %s, Group Name: %s\n", username.c_str(), group_name.c_str());
+
+        // send a confirmation message to the user who created the group
+        std::string confirmation_message = "You've created a new group " + group_name;
+        chat::chat_message confirmation_msg = chat::dm_msg(username, confirmation_message);
+        sock.sendto(reinterpret_cast<const char *>(&confirmation_msg), sizeof(chat::chat_message), 0, (sockaddr *)&client_address, sizeof(client_address));
+    }
+}
+```
 
 
 
