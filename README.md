@@ -1,6 +1,23 @@
-# iot_ws2_part2
+# Worksheet 2 Part 2 README
+
+### Worksheet Overview
+- This worksheet focuses on the development of a simple chat application, leveraging the Internet of Things concepts. It includes building a server-side application while utilising a provided client side application for communication. The worksheet is designed to enhance understanding of socket programming, thread management, and the use of data structures.
+
+### Task 1 Server Side
+- **Objective**: Implement parts of the server to handle `JOIN`, `DIRECTMESSAGE` and `EXIT` commands.
+- **Key Components**: 
+    - Understanding of server loops and message handling
+    - Usasge of maps for managing online users.
+    - Implementation of specific handler functions for processing different types of chat messages.
 
 
+### void_handle_join():
+- **Function Params**: 
+```cppp
+void handle_join(
+online_users &online_users, std::string username,
+    std::string, struct sockaddr_in &client_address,
+    uwe::socket &sock, bool &exit_loop) {}
+```
 
 
-TASK 3. WAS. GOD. DAMN. PAINFUL. PAINFUL!.
