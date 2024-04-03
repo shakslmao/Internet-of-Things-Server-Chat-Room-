@@ -572,9 +572,8 @@ case chat::CREATE_GROUP:
 - **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
 - **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
 - **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
+![alt text](images/screenshotcreategroup.png)
 
-
-[![alt text]()]
 
 
 
