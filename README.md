@@ -1,10 +1,10 @@
 # Worksheet 2 Part 2 README
 
 
-### Worksheet Overview
+## Worksheet Overview
 - This worksheet focuses on the development of a simple chat application, leveraging the Internet of Things concepts. It includes building a server-side application while utilising a provided client side application for communication. The worksheet is designed to enhance understanding of socket programming, thread management, and the use of data structures.
 
-### Task 1 Server Side
+## Task 1 Server Side
 - **Objective**: Implement parts of the server to handle `JOIN`, `DIRECTMESSAGE` and `EXIT` commands.
 - **Key Components**: 
     - Understanding of server loops and message handling
