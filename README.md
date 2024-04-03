@@ -171,6 +171,8 @@ online_users[username] = client_addr;
 - Welcome message constructed by concatenating a greeting with the username and the formatted current time.
 - `chat::chat_message priv_welcome_msg = chat::dm_msg("Server", welcome_msg)`: Creates a direct message (dm_msg) from the "Server" to the new user, containing the welcome message.
 - The message is sent using `sock.sendto`, similar to the previously described broadcast process. This function sends the `priv_welcome_msg` to the `client_address`, which is the network address of the new user.
+
+Output.
 ![alt text](/images/screenshotjoin.png)
 
 
