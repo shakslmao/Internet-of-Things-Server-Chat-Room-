@@ -134,7 +134,7 @@ online_users[username] = client_addr;
     - `reinterpret_cast<const char *>(&broadcast_msg)`: Converts the address of `broadcast_msg` to a const char*, as required by the `sendto` function.
     - `sizeof(broadcast_msg)`: The size of the message to be sent.
     - `0`: Flags parameter, here set to `0` for default behaviour.
-    - `(sockaddr *)addr`: The recipient's address cast to a `sockaddr*`. This is the address to which the message will be sent.
+    - `(sockaddr *)addr`: The recipients address cast to a `sockaddr*`. This is the address to which the message will be sent.
     - `sizeof(struct sockaddr_in)`: The size of the recipients address structure.
 
 **Error Handling**
@@ -186,7 +186,7 @@ void handle_directmessage(
 - `std::string message`: The raw message content, expected to include a recipient username, followed by a colon, and then the actual message.
 - `struct sockaddr_in &client_address`: A reference to the senders network address structure.
 - `uwe::socket &sock`: A reference to the socket object used for network communication.
-- `bool &exit_loop`: A reference to a boolean variable controlling the server's main event loop, not directly used in this function.
+- `bool &exit_loop`: A reference to a boolean variable controlling the servers main event loop, not directly used in this function.
 
 
 **Extract the Recipients Username and Message**
@@ -273,19 +273,308 @@ auto recipient_it = online_users.find(recipient_username);
 
 - **Handling if the Recipient is Not Found**:
     - If the recipient is not found (`recipient_it == online_users.end()`), it logs a debug message indicating the recipient is not found.
-    - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`;,
-
-## void handle_exit();
-
+    - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`.
+![alt text](/images/screenshotdm.png)
 
 
+## void handle_exit():
+```cpp
+    chat::chat_message exit_message = chat::exit_msg();
+    for (const auto &[user, addr] : online_users)
+    {
+        ssize_t send_bytes = sock.sendto(reinterpret_cast<const char *>(&exit_message), sizeof(exit_message),
+                        0,(sockaddr *)addr, sizeof(struct sockaddr_in));
+        if (send_bytes != sizeof(exit_message))
+        {
+            DEBUG("Failed to send exit message to user %s\n", user.c_str());
+        }
+    }
+```
+**Creating the Exit Message**:
+    - `chat::chat_message exit_message = chat::exit_msg()`: This line invokes the `exit_msg` funciton, which is part of the chat namespace, the function creates a chat_message objected configured as an exit message.
+```cpp
+  inline chat_message exit_msg()
+    {
+        return chat_message{EXIT, '\0', '\0'};
+    }
+```
+
+**Iterating Over Online Users**:
+    - The `for` loop iterates through each entry in the `online_users` collection. Each entry consists of a users username  and their network address information (addr). 
+
+**Sending the Exit Messasge to Each User**
+- Inside the loop, the `sendto` function is used to send the exit message to the address associated with each user:
+    - `reinterpret_cast<const char *>(&exit_message)`: This casts the address of the `exit_message` object to a const char*, which is necessary because `sendto` requires a byte buffer as its input.
+    - `sizeof(exit_message)`: Specifies the size of the exit message to be sent.
+    - `0`: The flags parameter, set to 0 for no special behavior.
+    - `(sockaddr *)addr`: Casts the users address to a `sockaddr*`, which `sendto` requires to specify the destination address.
+    - `sizeof(struct sockaddr_in):` Provides the size of the address structure, ensuring the correct amount of address data is used by sendto.
+
+**Memory Cleanup for Online Users**
+```cpp
+ for (const auto &user : online_users)
+    {
+        delete user.second;
+    }
+    online_users.clear();
+    exit_loop = true;
+```
+- The for loop iterates over each entry in the `online_users` map. Each entry contains a pair where the first element is the users identifier and the second element is a pointer to dynamically allocated memory.
+- `delete user.second;`: For each user, this line deallocates the memory pointed to by the second element of the pair. This is necessary to prevent memory leaks, ensuring that all dynamically allocated resources are properly released when they're no longer needed.
+- `online_users.clear()`: After deallocating the memory for each user, this line clears the `online_users` container, removing all its elements. This step ensures that the container is left in a clean state, with no dangling pointers.
 
 
+## Task 2 Client Side
+- **Objective**: Implement and enhance the clients ability to interact with a chat server, handle user inputs, display messages and manage the state of the chat session effectively.
+- **Key Components**: 
+    - Network and Communication, establishing and managing UDP socket connection with the server.
+    - Send and recieve messages using the socket, including handling different types of chat commands.
+    - Implement functions to create and send various types of messages to the server, such as join, leave, direct message, create group, add to group, etc.
+    - Implement a receiver thread that listens for incoming messages from the server without blocking the main thread or UI.
+
+**Message Reception**
+```cpp
+ssize_t recv_len = sock->recvfrom(reinterpret_cast<char *>(&msg), sizeof(chat::chat_message), 0, nullptr, nullptr);
+```
+- `sock->recvfrom`: Calls the recvfrom method on the socket object to receive data from the server. This method blocks the thread until a message arrives if theres no data currently available.
+- `reinterpret_cast<char *>(&msg):` Casts the address of msg to a `char*` pointer, as recvfrom expects a buffer of bytes to store the incoming data.
+- `sizeof(chat::chat_message)`: Specifies the size of the `chat::chat_message `structure, indicating how many bytes should be read and stored into msg
+- The function returns the length of the received message in bytes and stores this value in `recv_len`. If `recv_len` is greater than 0, it indicates that data has been successfully received.
+
+**Sending Message to Main UI thread**
+```cpp
+if (recv_len > 0)
+{
+    tx.send(msg);
+}
+```
+- After successfully receiving a message, the received` chat::chat_message` object `msg` is sent to the main UI thread using the `tx` channel.
+- `tx.send(msg)`: Sends the `msg` object through the channel to what is listening on the other end of this channel.
 
 
+**Case `chat::EXIT`**
+```cpp
+case chat::EXIT:
+{
+    DEBUG("Received Exit from GUI\n");
+    chat::chat_message exit_msg = chat::exit_msg();
+    sock.sendto(reinterpret_cast<const char *>(&exit_msg), sizeof(chat::chat_message),
+            0, (sockaddr *)&server_address, sizeof(server_address));
+    exit_loop = true;
+    break;
+}
+```
+- **Functionality**: This case is triggered when the user decides to exit the chat app.
+- **Operation**:
+    - Logs the reception of an `EXIT` command from the GUI for debugging.
+    - Constructs an `EXIT` message `using chat::exit_msg()` to notify the server of the clients intention to disconnect.
+    - sends the `EXIT` message to the server.
+    - Sets `exit_loop` to true, indicating the main event loop should terminate, closing the client application.
+
+**Case `chat::LEAVE`**
+```cpp
+case chat::LEAVE:
+{
+    DEBUG("Received LEAVE from GUI\n");
+    chat::chat_message leave_msg = chat::leave_msg();
+    sock.sendto(reinterpret_cast<const char *>(&leave_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    sent_leave = true;
+    break;
+}
+```
+- **Functionality**:Handles the scenario where the user wants to leave the chat but not necessarily close the application.
+- **Operation**:
+    - Logs the reception of a `LEAVE` command.
+    - Constructs a `LEAVE` message using `chat::leave_msg().`
+    - Sends the `LEAVE` message to the server, informing it that the user wishes to disconnect from the chat session but not exit the application.
+    - Sets `sent_leave` to true, a flag indicating that a leave message has been sent.
+
+**Case `chat::LIST`:
+```cpp
+case chat::LIST:
+{
+    DEBUG("Received LIST from GUI\n");
+    chat::chat_message list_msg = chat::list_msg();
+    sock.sendto(reinterpret_cast<const char *>(&list_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    break;
+}
+```
+- **Functionality**: Requests the current list of online users from the server.
+- **Operation**:
+    - Logs the action of requesting the online user list.
+    - Constructs a `LIST` message using `chat::list_msg()`
+    - Sends this message to the server, which should respond with a list of currently online users.
+
+**Default Case**
+```cpp
+default:
+{
+     // the default case is that the command is a username for DM
+     // <username> : message
+    if (cmds.size() == 2)
+    {
+        DEBUG("Received message from GUI\n");
+    }
+    break;
+}
+```
+- **Functionality**: Makes the input to be a DM to another users
+- **Operation**:
+    - Logs the reception of a message intended for another user.
+
+**Direct Message Handling**
+```cpp
+if (cmds.size() == 2 && type == chat::UNKNOWN)
+{
+    std::string recipient = cmds[0];
+    std::string content = cmds[1];
+    std::string dm_message = recipient + ":" + content;
+    chat::chat_message dm_msg = chat::dm_msg(username, dm_message);
+    sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(chat::chat_message), 
+            0, (sockaddr *)&server_address, sizeof(server_address));
+    DEBUG("DM sent to %s\n", recipient.c_str());
+}
+```
+- **Command Parsing**: The condition `if (cmds.size() == 2 && type == chat::UNKNOWN)` checks if the parsed command consists of two parts and if the command type is `UNKNOWN`. In this context, `UNKNOWN`  means that the command doesnt match any predefined actions (such as JOIN, LEAVE), allowing for a direct message where the first part is the recipients username and the second part is the message content.
+
+- **Recipient and Content Extraction**
+    - `std::string recipient = cmds[0];` retrieves the recipients username from the first part of the parsed command.
+    - `std::string content = cmds[1];` gets the actual message content intended for the recipient from the second part.
+
+- **Message Construction**:
+    - `std::string dm_message = recipient + ":" + content;` constructs the direct message string by appending the recipients username and the message content, separated by a colon.
+    - `chat::chat_message dm_msg = chat::dm_msg(username, dm_message)`; constructs a `chat::chat_message` object for the direct message. The function `chat::dm_msg` is used to create this message object.
+
+- **Sending the Direct Message**
+    - The message is sent to the server using `sock.sendto`, which sends the constructed `dm_msg` object to the servers address.
+    - The `sendto` function arguments ensure that the message is correctly formatted as a byte array and sent to the correct server address and port.
 
 
+## Task 3 Group Messaging (this was a headache...)
 
+### Create Group
+
+**Header Implementation for Create Group**
+```cpp
+enum type {
+    CREATE_GROUP
+}
+
+inline chat_message create_group(std::string group_name, std::string username)
+{
+    chat_message msg;
+    msg.type_ = CREATE_GROUP;
+
+    // copied string does not exceed the buffer size, leaving space for null terminator
+    size_t group_name_length = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
+    memcpy(&msg.groupname_[0], group_name.c_str(), group_name.length());
+    msg.groupname_[group_name.length()] = '\0'; // NULL terminate
+
+    size_t username_length = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
+    memcpy(&msg.username_[0], username.c_str(), username_length);
+    msg.username_[username_length] = '\0'; // NULL terminate
+    msg.message_[0] = '\0';
+    return msg;
+}
+```
+The function `create_group` constructs a `chat_message` object for the creation of a new group chat. The message includes the group names and the user of the creating the group. The function ensures that the data copied into the message buffer does nto exceed the predefined limits, avoiding buffer overflow issues.
+
+- **Initalise `chat_message` object:
+    - A new `chat_message` object `msg` is created and its `type_` field is set to `CREATE_GROUP`. This indicates the type of message and the command to create a new group
+
+- **Handle Group Name**:
+    - The function calculates the length of the `group_name` string to ensure it does not exceed `MAX_GROUPNAME_LENGTH` - 1. This calculation is crucial to avoid buffer overflows and ensure theres space for a null terminator ('\0') at the end of the string.
+    - It then copies the `group_name` into the msg.`groupname_` field using `memcpy`.
+    - The group name in the message is null-terminated to ensure it's a valid C-style string.
+
+- **Handle Username**:
+    - Similarly, it calculates the length of the username string, ensuring it does not exceed `MAX_USERNAME_LENGTH` - 1. This is again to prevent buffer overflow and allow for a null terminator.
+    - The username is copied into the `msg.username_` field using `memcpy`,
+    - The username is also null-terminated to ensure it's a valid C-style string.
+
+- **Initalise Message Field**
+    - The function sets the first character of the `msg.message_` field to '\0`, so that it doesnt carry any additional messages beyond the create group command.
+
+- **Return the Prepared Message**:
+    - Finally, the function returns the `msg` object, it is set up to represent a command to create a new group chat.
+
+**Server Implementation for Create Group**
+```cpp
+void handle_creategroup(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received creategroup\n");
+    if (groups.find(group_name) != groups.end())
+    {
+        handle_error(ERR_GROUP_ALREADY_EXISTS, client_address, sock, exit_loop);
+    }
+    else
+    {
+        groups[group_name].push_back(username);
+        user_groups[username] = group_name;
+
+        std::string created_message = username + " created a new group: " + group_name;
+        // chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+        for (const auto &user : online_users)
+        {
+            // Send the message to all users except the one who created the group
+            if (user.first != username)
+            {
+                chat::chat_message custom_msg = chat::broadcast_msg("Server", created_message);
+                sock.sendto(reinterpret_cast<const char *>(&custom_msg), sizeof(custom_msg), 0, (sockaddr *)user.second, sizeof(struct sockaddr_in));
+            }
+        }
+        DEBUG("Username: %s, Group Name: %s\n", username.c_str(), group_name.c_str());
+
+        // send a confirmation message to the user who created the group
+        std::string confirmation_message = "You've created a new group " + group_name;
+        chat::chat_message confirmation_msg = chat::dm_msg(username, confirmation_message);
+        sock.sendto(reinterpret_cast<const char *>(&confirmation_msg), sizeof(chat::chat_message), 0, (sockaddr *)&client_address, sizeof(client_address));
+    }
+}
+```
+- **Logging The Recieved Request**:
+    - DEBUG("Received creategroup\n");: This logs the reception of a create group request for debugging purposes.
+
+- **Checking for Existing Groups**:
+    - The function first checks if the requested `group_name` already exists in the `groups` container, if it finds that the group already exists, it calls the `handle_error` with the macro `ERR_GROUP_ALREADY_EXISTS` to handle this condition.
+
+- **Creating the New Group**:
+    - If the group does not exist, the function proceeds to create it by adding the username of the creator to the new groups member list in `groups[group_name]`.
+    - It also updates `user_groups` which maps users to their respective groups.
+
+- **Notifying all Online Users**
+    - The function constructs a message stating that the user has created a new group and iteratres over all `online_users` to broadcast this message.
+    - For each online user excpet the group creator, it sends a broadcast message using `sock.sendto` this sends a group creation notifcation to each user.
+
+- **Sending Confirmation to the Creator**:
+    - Finally, it sends a direct message (DM) to the group creator, confirming the successful creation of the group. This DM is sent using s`ock.sendto()` as well, targeting only the creators client address.
+
+**Client Implementation for Create Group**
+```cpp
+case string_to_int("creategroup"): // to create a group
+        return chat::CREATE_GROUP;
+
+case chat::CREATE_GROUP:
+{
+    if (cmds.size() > 1) {
+        std::string group_name = cmds[1];
+        chat::chat_message creategroup_msg = chat::create_group(group_name, username);
+        sock.sendto(reinterpret_cast<const char *>(&creategroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+        DEBUG("Create group '%s' message sent\n", group_name.c_str());
+    } else {
+    DEBUG("Invalid creategroup command format\n");
+    }
+    break;
+}
+```
+
+- **Command Check**: The code starts by checking if the `cmds` has more than one element, this check ensures that the command to create a group is followed by at least one argument.
+- **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
+- **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
+- **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
+
+
+[![alt text]()]
 
 
 
