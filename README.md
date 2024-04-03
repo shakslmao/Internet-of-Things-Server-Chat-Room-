@@ -1,5 +1,6 @@
 # Worksheet 2 Part 2 README
 
+
 ### Worksheet Overview
 - This worksheet focuses on the development of a simple chat application, leveraging the Internet of Things concepts. It includes building a server-side application while utilising a provided client side application for communication. The worksheet is designed to enhance understanding of socket programming, thread management, and the use of data structures.
 
@@ -11,7 +12,7 @@
     - Implementation of specific handler functions for processing different types of chat messages.
 
 
-### void_handle_join():
+## void_handle_join():
 - **Function Params**: 
 ```cppp
 void handle_join(
