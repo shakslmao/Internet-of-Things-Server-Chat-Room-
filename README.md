@@ -188,7 +188,21 @@ void handle_directmessage(
 - `uwe::socket &sock`: A reference to the socket object used for network communication.
 - `bool &exit_loop`: A reference to a boolean variable controlling the server's main event loop, not directly used in this function.
 
+
 **Extract the Recipients Useranme and Message**
+```cpp
+std::size_t colon_pos = message.find(':');
+    if (colon_pos == std::string::npos)
+    {
+        DEBUG("Invalid DM format, missing colon. Received: %s\n", message.c_str());
+        return; // Invalid format, could log or handle error here
+    }
+
+    std::string recipient_username = message.substr(0, colon_pos);
+    std::string actual_message = message.substr(colon_pos + 1);
+    DEBUG("Parsed DM: Recipient: %s, Message: %s\n", recipient_username.c_str(), actual_message.c_str());
+```
+
 - The message format expected is "recipient_username:message_content". The code needs to identify the recipient and the actual message to proceed correctly.
 
 **Finding the Colon Position**
@@ -199,7 +213,19 @@ void handle_directmessage(
 - If the formot is invalid, a debug messasge is logged using the `DEBUG` macro to indicate the issue, inclduding the recieved message.
 
 **Extracting the Recipients Useranme and Message**
-- if the colon is found, 
+- if the colon is found, which indicates a potentially valid format, the code proceeds to extract the recipients username and the message content.
+- `std::string recipient_username = message.substr(0, colon_pos);`: This line extracts the substring from the start of the message up to (but not including) the colon position.
+- `std::string actual_message = message.substr(colon_pos + 1);`: This line extracts the substring starting just after the colon to the end of the message string. 
+
+**Validate the Sender**
+```cpp
+   auto sender_it = online_users.find(username);
+    if (sender_it == online_users.end() || sender_it->second->sin_addr.s_addr != client_address.sin_addr.s_addr)
+    {
+        DEBUG("Sender %s not found\n", username.c_str());
+        return;
+    }
+```
 
 
 
