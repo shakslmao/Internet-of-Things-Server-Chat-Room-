@@ -261,6 +261,23 @@ auto recipient_it = online_users.find(recipient_username);
                             (sockaddr *)&client_address, sizeof(client_address));
     }
 ```
+- **Finding the Recipient in `online_users`**
+    - `auto recipient_it = online_users.find(recipient_username);`: Searches for the `recipient_username` in the `online_users` map.
+    - The result of the search is an iterator, recipient_it, which points to the found entry or to the end of the map if the username is not found.
+
+- **Handling if the Recipient is Found**
+    - If the iterator does not equal `online_users.end()`, it indicates that the recipient is found in the map.
+    - `DEBUG`: Logs a debug message indicating an attempt to send a DM to the recipient.
+    - The DM is created by calling `chat::dm_msg(username, actual_message)`, whihc takes the senders username and the message content to create a `chat_message` object.
+    - The message is sent using `sock.sendto` which sends the message to the network address associated with `recipient_it->second`. The `sendto` function parameters are designed to convert the message to a raw byte format and specify the recipienss address and message size.
+
+- **Handling if the Recipient is Not Found**:
+    - If the recipient is not found (`recipient_it == online_users.end()`), it logs a debug message indicating the recipient is not found.
+    - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`;,
+
+## void handle_exit();
+
+
 
 
 
