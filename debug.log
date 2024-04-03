@@ -1,2 +1,4 @@
-DEBUG: chat_client.cpp:178:main(): Join message (s2-akram) sent, waiting for JACK
+DEBUG: chat_client.cpp:178:main(): Join message (user2) sent, waiting for JACK
 DEBUG: chat_client.cpp:184:main(): Received jack
+DEBUG: chat_client.cpp:288:main(): Received message from GUI
+DEBUG: chat_client.cpp:301:main(): DM sent to s2-akram
