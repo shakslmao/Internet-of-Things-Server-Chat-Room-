@@ -450,7 +450,11 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
     - The `sendto` function arguments ensure that the message is correctly formatted as a byte array and sent to the correct server address and port.
 
 
-## Task 3 Group Messaging (this was a headache...)
+## Task 3 Group Messaging
+**GUI instructions to Create/Add/Message in Groups**
+**Create Group**: <creategroup>:<groupname>
+**Add to Group**: <addtogroup>:<groupname>:<user>
+**Group Messasge**: <groupmsg>:<groupname>:<message>
 
 ### Create Group
 
@@ -573,6 +577,9 @@ case chat::CREATE_GROUP:
 - **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
 - **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
 ![alt text](images/screenshotcreategroup.png)
+
+
+## Add Users to Group
 
 
 
