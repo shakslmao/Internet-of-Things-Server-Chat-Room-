@@ -621,7 +621,7 @@ case chat::CREATE_GROUP:
 - **Initalise the Message Field**
     - `msg.message_[0]` ensures the `message_` field of the `msg` structure starts with a null character, making it an empty string.
 
-**Server Implementation of Add to Group
+**Server Implementation of Add to Group**
 ```cpp
 void handle_add_to_group(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
 {
@@ -676,5 +676,13 @@ void handle_add_to_group(online_users &online_users, group_members &groups, user
     }
 }
 ```
+
+**Group Existence Check**
+- Verifies if the specified `group_name` exists within the groups container. If not, it invokes `handle_error` with `ERR_GROUP_NOT_FOUND`, indicating the group does not exist, and then exits early from the function.
+
+**User Existence Check**
+- Checks if the username exists in the `online_users` map. If the user is not found, `handle_error` is called with `ERR_UNKNOWN_USERNAME`, indicating the user is not recognised as online, and the function exits early.
+
+**Is User Already a Member? Check**
 
     
