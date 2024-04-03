@@ -274,8 +274,10 @@ auto recipient_it = online_users.find(recipient_username);
 - **Handling if the Recipient is Not Found**:
     - If the recipient is not found (`recipient_it == online_users.end()`), it logs a debug message indicating the recipient is not found.
     - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`;,
+![alt text](/images/screenshotdm.png)
 
 ## void handle_exit();
+
 
 
 
