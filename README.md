@@ -450,7 +450,17 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
     - The `sendto` function arguments ensure that the message is correctly formatted as a byte array and sent to the correct server address and port.
 
 
-## Task 3 Group Messaging (This was a headache...)
+## Task 3 Group Messaging (this was a headache...)
+
+**chat_new.hpp Implementation**
+```cpp
+ enum chat_type
+    {
+        CREATE_GROUP,     
+        ADD_TO_GROUP,     
+        GROUP_MESSAGE,   
+    };
+```
 
 
 
