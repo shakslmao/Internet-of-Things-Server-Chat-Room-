@@ -368,18 +368,14 @@ void handle_directmessage(
 
         // Send DM to the recipient
         ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&dm_msg), sizeof(dm_msg), 0, (sockaddr *)recipient_it->second, sizeof(struct sockaddr_in));
-        // Check if the message was sent successfully
         if (sent_bytes != sizeof(dm_msg))
         {
             DEBUG("Failed to send DM to %s\n", recipient_username.c_str());
-            // Optionally, handle the error, such as notifying the sender of the failure
         }
     }
     else
     {
         DEBUG("Recipient %s not found\n", recipient_username.c_str());
-        // Here, you might want to send an error message back to the sender
-        // indicating that the recipient username does not exist or is not online.
         chat::chat_message err_msg = chat::error_msg(ERR_UNKNOWN_USERNAME);
         sock.sendto(reinterpret_cast<const char *>(&err_msg), sizeof(err_msg), 0, (sockaddr *)&client_address, sizeof(client_address));
     }
