@@ -13,7 +13,7 @@
 
 
 ## void_handle_join():
-- **Function Params**: 
+- **Function Signature**: 
 ```cppp
 void handle_join(
 online_users &online_users, std::string username,
@@ -21,7 +21,24 @@ online_users &online_users, std::string username,
     uwe::socket &sock, bool &exit_loop) {}
 ```
 - **online_users &online_users**: A reference to the map that tracks the online status of clients, the key is is the username, and the value is a pointer to a `sockaddr_in` a structure representing the clients address.
-typedef std::map<std::string, sockaddr_in *> online_users; 
+`typedef std::map<std::string, sockaddr_in *> online_users`; 
+
+**std::string username**: The username of the client attempting to join the chat.
+**struct sockaddr_in &client_address**: A reference to a strucutre containing the clients network address.
+**uwe::socket &sock**: A reference to the socket object used for network communications.
+**bool &exit_loop**: A reference to a boolean variable that controls the servers main loop, allowing the server to exit gracefully.
+
+**Debug Message**
+```cpp
+DEBUG("Received join\n");
+```
+- Logs a message indicating a join request has been recieved.
+
+
+
+
+
+
 
 
 
