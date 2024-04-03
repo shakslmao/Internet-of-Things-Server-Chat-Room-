@@ -273,10 +273,55 @@ auto recipient_it = online_users.find(recipient_username);
 
 - **Handling if the Recipient is Not Found**:
     - If the recipient is not found (`recipient_it == online_users.end()`), it logs a debug message indicating the recipient is not found.
-    - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`;,
+    - An error message is then prepared using `chat::error_msg(ERR_UNKNOWN_USERNAME)`.
 ![alt text](/images/screenshotdm.png)
 
-## void handle_exit();
+
+## void handle_exit():
+```cpp
+    chat::chat_message exit_message = chat::exit_msg();
+    for (const auto &[user, addr] : online_users)
+    {
+        ssize_t send_bytes = sock.sendto(reinterpret_cast<const char *>(&exit_message), sizeof(exit_message),
+                        0,(sockaddr *)addr, sizeof(struct sockaddr_in));
+        if (send_bytes != sizeof(exit_message))
+        {
+            DEBUG("Failed to send exit message to user %s\n", user.c_str());
+        }
+    }
+```
+**Creating the Exit Message**:
+    - `chat::chat_message exit_message = chat::exit_msg()`: This line invokes the `exit_msg` funciton, which is part of the chat namespace, the function creates a chat_message objected configured as an exit message.
+```cpp
+  inline chat_message exit_msg()
+    {
+        return chat_message{EXIT, '\0', '\0'};
+    }
+```
+
+**Iterating Over Online Users**:
+    - The `for` loop iterates through each entry in the `online_users` collection. Each entry consists of a users username  and their network address information (addr). 
+
+**Sending the Exit Messasge to Each User**
+    - Inside the loop, the `sendto` function is used to send the exit message to the address associated with each user:
+        - `reinterpret_cast<const char *>(&exit_message)`: This casts the address of the `exit_message` object to a const char*, which is necessary because `sendto` requires a byte buffer as its input.
+        - `sizeof(exit_message)`: Specifies the size of the exit message to be sent.
+        - 0: The flags parameter, set to 0 for no special behavior.
+        - `(sockaddr *)addr`: Casts the users address to a `sockaddr*`, which `sendto` requires to specify the destination address.
+        - `sizeof(struct sockaddr_in):` Provides the size of the address structure, ensuring the correct amount of address data is used by sendto.
+
+**Memory Cleanup for Online Users**
+```cpp
+ for (const auto &user : online_users)
+    {
+        delete user.second;
+    }
+    online_users.clear();
+    exit_loop = true;
+```
+
+
+
 
 
 
