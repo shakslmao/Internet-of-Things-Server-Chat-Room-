@@ -610,8 +610,71 @@ case chat::CREATE_GROUP:
     - The lengths of `group_name` and `username` are calculated using` std::min` to ensure they do not exceed the buffer size reserved for them in `msg`. This step is critical to avoid writing past the end of the buffers, which could lead to undefined behavior.
     - `- 1` in the calculation `(sizeof(msg.groupname_) - 1` and `sizeof(msg.username_) - 1)` ensures theres space left for the null terminator, a requirement for C-style strings.
 
-- **Copy the Strings into `chat_message`:
+- **Copy the Strings into `chat_message`**:
     - `memcpy(msg.groupname_, group_name.c_str(), group_name_len)`; copies `group_name_len` bytes of `group_name` into `msg.groupname_.`.
     - `memcpy(msg.username_, username.c_str(), username_len);` similarly copies `username_len` bytes of `username` into `msg.username_.`.
     - Both `groupname_` and `username_` fields are explicitly null terminated after copying. This  nul-termination is important because `memcpy` does not null-terminate the buffer.
+
+- **Set Message Type**
+    - `msg.type_ = ADD_TO_GROUP;` sets the message type to `ADD_TO_GROUP`, this type tells the receiver how to interpret the message.
+
+- **Initalise the Message Field**
+    - `msg.message_[0]` ensures the `message_` field of the `msg` structure starts with a null character, making it an empty string.
+
+**Server Implementation of Add to Group
+```cpp
+void handle_add_to_group(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received addtogroup\n");
+
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if the user exists in online users
+    if (online_users.find(username) == online_users.end())
+    {
+        handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if user is already in the group
+    auto &members = groups[group_name];
+    if (std::find(members.begin(), members.end(), username) != members.end())
+    {
+        handle_error(ERR_USER_ALREADY_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Add user to the group
+    members.push_back(username);
+    user_groups[username] = group_name;
+
+    // Broadcast the message to all users in the group
+    std::string message = "Server: " + username + " has joined the group [" + group_name + "]";
+    for (const auto &member : members)
+    {
+        DEBUG("Message before send to %s: %s\n", member.c_str(), message.c_str());
+
+        auto member_it = online_users.find(member);
+        if (member_it != online_users.end() && member_it->second != nullptr)
+        { // Check if member is online
+            chat::chat_message msg = chat::broadcast_msg("Server", message);
+            ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&msg), sizeof(msg), 0, (sockaddr *)member_it->second, sizeof(struct sockaddr_in));
+            if (sent_bytes != sizeof(msg))
+            {
+                DEBUG("Failed to send message to user %s\n", member.c_str());
+            }
+        }
+        else
+        {
+            DEBUG("Member %s not found online\n", member.c_str());
+        }
+    }
+}
+```
+
     
