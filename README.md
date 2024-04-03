@@ -22,17 +22,30 @@ online_users &online_users, std::string username,
 ```
 - **online_users &online_users**: A reference to the map that tracks the online status of clients, the key is is the username, and the value is a pointer to a `sockaddr_in` a structure representing the clients address.
 `typedef std::map<std::string, sockaddr_in *> online_users`; 
-
-**std::string username**: The username of the client attempting to join the chat.
-**struct sockaddr_in &client_address**: A reference to a strucutre containing the clients network address.
-**uwe::socket &sock**: A reference to the socket object used for network communications.
-**bool &exit_loop**: A reference to a boolean variable that controls the servers main loop, allowing the server to exit gracefully.
+- **std::string username**: The username of the client attempting to join the chat.
+- **struct sockaddr_in &client_address**: A reference to a strucutre containing the clients network address.
+- **uwe::socket &sock**: A reference to the socket object used for network communications.
+- **bool &exit_loop**: A reference to a boolean variable that controls the servers main loop, allowing the server to exit gracefully.
 
 **Debug Message**
 ```cpp
 DEBUG("Received join\n");
 ```
 - Logs a message indicating a join request has been recieved.
+
+**Checks for Existing User**
+```cpp
+if (online_users.find(username) != online_users.end())
+{
+    handle_error(ERR_USER_ALREADY_ONLINE, client_address, sock, exit_loop);
+    return;
+}
+// chat.hpp: #define ERR_USER_ALREADY_ONLINE 0
+```
+- Checks if the username already exists in the online_users map. If found, it sends an error response to the client and returns early. online_users.find(username): This line attempts to find the username in the map collection named that holds the usernames of all currently online users.
+- `if (online_users.find(username) != online_users.end())`: This condition checks if the iterator returned by `online_users.find(username)` is not equal to the end iterator of the `online_users` container. If it's not equal, it means the username was found in the container, indicating the user is already marked as online.
+
+
 
 
 
