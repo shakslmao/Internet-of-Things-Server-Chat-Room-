@@ -181,6 +181,28 @@ void handle_directmessage(
     online_users &online_users, std::string username, std::string message,
     struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop);
 ```
+- `online_users &online_users`: A reference to a map tracking online clients. Keys are usernames, and values are pointers to `sockaddr_in` structures with clients network addresses.
+- `std::string username`: The senders username.
+- `std::string message`: The raw message content, expected to include a recipient username, followed by a colon, and then the actual message.
+- `struct sockaddr_in &client_address`: A reference to the senders network address structure.
+- `uwe::socket &sock`: A reference to the socket object used for network communication.
+- `bool &exit_loop`: A reference to a boolean variable controlling the server's main event loop, not directly used in this function.
+
+**Extract the Recipients Useranme and Message**
+- The message format expected is "recipient_username:message_content". The code needs to identify the recipient and the actual message to proceed correctly.
+
+**Finding the Colon Position**
+- `std::size_t colon_pos = message.find(':')`: This line searches for the position of the first colon `:` in the `message` string. The `find` method returns the position of the first occurrence of the colon, if this is not found, it returns `std::string::npos`, which indicates no matches were found.
+
+**Validating the Message Format**
+- The `if` statetemnt checks if the `colon_pos` equals `std::string::npos`, which would mean no colon was found in the message, indicating an invalid dm format.
+- If the formot is invalid, a debug messasge is logged using the `DEBUG` macro to indicate the issue, inclduding the recieved message.
+
+**Extracting the Recipients Useranme and Message**
+- if the colon is found, 
+
+
+
 
 
 
