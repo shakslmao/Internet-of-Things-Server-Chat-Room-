@@ -571,6 +571,7 @@ case chat::CREATE_GROUP:
     break;
 }
 ```
+- The command "creategroup" is converted to an enum value chat::CREATE_GROUP using a string_to_int function, facilitating the switch-case statements operation. This approach allows for efficient command parsing and handling.
 
 - **Command Check**: The code starts by checking if the `cmds` has more than one element, this check ensures that the command to create a group is followed by at least one argument.
 - **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
@@ -733,6 +734,17 @@ case chat::ADD_TO_GROUP:
     break;
 }
 ```
+**Command identifier**: The command `addtogroup` is converted to an enum value `chat::ADD_TO_GROUP` using `string_to_int` function, facilitating the switch-case statement operation. This approach allows for efficient command parsing and handling.
+
+**Command Function Validation**: It checks if the `cmds` list contains more than two elements, indicating the command includes both a gorup and a username to add to the group
+
+**Extract Command Args**; If the command format is correct, it extracts the `group_name` and `user_to_add` from the `cmds` list. The group name is the first argument after the command and the user to add is the second argument.
+
+**Futher Validation**: Verifies that neither the group nor the username to add is empty, this additonal check ensures that the command contains valid params.
+
+- **Create and Send `Add to Group` Message:
+    - If the command and its arguments are valid, it creates an "Add to Group" message using the `chat::add_to_group `function. 
+    - The message is then sent over the network using `sock.sendto()`, targeting the servers address. Allowing the server to process this command, updating group memberships, and notifying the group members of the change.
 
 
 
