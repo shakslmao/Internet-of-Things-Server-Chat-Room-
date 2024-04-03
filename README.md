@@ -351,7 +351,19 @@ if (recv_len > 0)
 - After successfully receiving a message, the received` chat::chat_message` object `msg` is sent to the main UI thread using the `tx` channel.
 - `tx.send(msg)`: Sends the `msg` object through the channel to what is listening on the other end of this channel.
 
-
+**Case `chat::EXIT`**
+```cpp
+   case chat::EXIT:
+                        {
+                            DEBUG("Received Exit from GUI\n");
+                            // Send EXIT message to the server
+                            chat::chat_message exit_msg = chat::exit_msg();
+                            sock.sendto(reinterpret_cast<const char *>(&exit_msg), sizeof(chat::chat_message),
+                                            0, (sockaddr *)&server_address, sizeof(server_address));
+                            exit_loop = true;
+                            break;
+                        }
+```
 
 
 
