@@ -452,9 +452,9 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
 
 ## Task 3 Group Messaging
 **GUI instructions to Create/Add/Message in Groups**
-**Create Group**: <creategroup>:<groupname>
-**Add to Group**: <addtogroup>:<groupname>:<user>
-**Group Messasge**: <groupmsg>:<groupname>:<message>
+- Create Group: `<creategroup>:<groupname>`
+- Add to Group: `<addtogroup>:<groupname>:<user>`
+- Group Messasge: `<groupmsg>:<groupname>:<message>`
 
 ### Create Group
 
