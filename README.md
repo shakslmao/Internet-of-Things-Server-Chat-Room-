@@ -107,8 +107,29 @@ online_users[username] = client_addr;
 `delete client_addr;`: If sending the message fails, this line deallocates the memory allocated for the users address information, cleaning up to prevent memory leaks.
 - `online_users.erase(username);`: Additionally, the username is removed from the `online_users` collection, reversing the registration since the join acknowledgment failed. This ensures the systems state remains consistent and does not consider the user as successfully joined.
 
-
-
+**Broadcast the New User Join**:
+```cpp
+        chat::chat_message broadcast_msg = chat::broadcast_msg("Server", username + " has joined the chat.");
+        for (const auto &[user, addr] : online_users)
+        {
+            if (user != username) 
+            {
+                sent_bytes = sock.sendto(reinterpret_cast<const char *>(&broadcast_msg), sizeof(broadcast_msg),
+                                 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+                if (sent_bytes != sizeof(broadcast_msg))
+                {
+                    DEBUG("Failed to send broadcast message to user %s\n", user.c_str());
+                }
+            }
+        }
+```
+- **Creating the Broadcast Message**
+    - `chat::chat_message broadcast_msg = chat::broadcast_msg()`: A message is created using `broadcast_msg` function, this function takes two arguments, a sender "Sever" and the messasge content. The result is stored in  a `broadcast_msg`.
+- **Iterating Over Online Users**:
+    - The `for` loop iterates over each entry in the `online_users` collection, which maps usernames to their network address. This holds the current state of users who are considered online.
+- **Sending the Message to Each User:
+    - Within the loop, theres a check to ensure that the new user (the one who just joined) does not receive their own join notification: `if (user != username).`
+    - 
 
 
 
