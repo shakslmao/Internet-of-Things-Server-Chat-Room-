@@ -47,14 +47,26 @@ if (online_users.find(username) != online_users.end())
 - `handle_error(ERR_USER_ALREADY_ONLINE, client_address, sock, exit_loop)`: If the user is already online, this line is executed to handle the error situation. The `handle_error` function is called with several arguments:
 `ERR_USER_ALREADY_ONLINE`: A preprocessor macro defined with the value 0, used as an error code indicating the specific error (user already online).
 
-
-
-
-
-
-
-
-
+**Validate Username**
+```cpp
+    if (username.empty() || username.length() > MAX_USERNAME_LENGTH)
+    {
+        DEBUG("Invalid username encountered: %s\n", username.c_str());
+        handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+        return; 
+    }
+    // chat.hpp: #define MAX_USERNAME_LENGTH 64
+    // chat.hpp: #define ERR_UNKNOWN_USERNAME 1
+```
+- Checks if the username is either empty or exceeds the maximum allowed length. If either condition is met, it indicates an invalid username, triggering an error response to the client and an early return from the function.
+- `if (username.empty() || username.length() > MAX_USERNAME_LENGTH):` This line evaluates two conditions:
+    - `username.empty(): `Checks if the username string is empty, which is an invalid state for a username.
+    - `username.length() > MAX_USERNAME_LENGTH:` Compares the length of the username to a predefined maximum length (MAX_USERNAME_LENGTH, defined as 64). This condition checks if the username length exceeds the maximum allowed limit.
+- If either of these conditions are true, it implies that the username is invalid for joining the server.
+- `DEBUG`: This debug statement logs the invalid username.
+- `handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop)`: Upon encountering an invalid username, this line executes to handle the error situation. The `handle_error` function is invoked with these arguments:
+    - `ERR_UNKNOWN_USERNAME`: An error code indicating the specific error condition (unknown or invalid username). A preprocessor macro defined with the value 1, used to define that the given username is not known.
+- `return`: This statement causes an early return from the function if an invalid username is encountered, preventing any further action or processing for this particular client request.
 
 
 
