@@ -789,7 +789,42 @@ The message content is copied into `msg.message_` and like the other fields, it 
 **Return**: Finally, the fully prepared `chat_message` object is returned, ready to be used for group messaging.
 
 
+**Server Implementation**:
+```cpp
+void handle_group_message(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, std::string message, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received group message\n");
 
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Verify sender is a part of the group
+    if (user_groups.find(username) == user_groups.end() || user_groups[username] != group_name)
+    {
+        handle_error(ERR_USER_NOT_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Retrieve group members
+    auto &members = groups[group_name];
+
+    // Send message to all group members
+    for (const auto &member : members)
+    {
+        auto it = online_users.find(member);
+        if (it != online_users.end())
+        { // Member is online
+            chat::chat_message group_msg = chat::group_message(group_name, username, message);
+            sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)it->second, sizeof(struct sockaddr_in));
+            DEBUG("Group message sent to '%s' in group '%s'\n", member.c_str(), group_name.c_str());
+        }
+    }
+}
+```
 
 
 
