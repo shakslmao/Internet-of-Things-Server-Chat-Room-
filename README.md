@@ -750,6 +750,49 @@ case chat::ADD_TO_GROUP:
 ![alt text](images/addtogroup2.png)
 ![alt text](images/addtogroup3.png)
 
+## Group Messaging
+
+**Header Implementation**
+- The group_message function is designed to construct a `chat_message` object intended for group messaging within the chat app. It prepares the message by including the group name, the username of the sender, and the message content, making sure that each piece of information fits within predefined length limits and is properly null-terminated.
+
+```cpp
+ inline chat_message group_message(std::string group_name, std::string username, std::string message)
+    {
+        chat_message msg;
+        msg.type_ = GROUP_MESSAGE;
+
+        size_t group_name_len = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
+        std::memcpy(msg.groupname_, group_name.c_str(), group_name_len);
+        msg.groupname_[group_name_len] = '\0'; // NULL terminate
+
+        size_t username_len = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
+        std::memcpy(msg.username_, username.c_str(), username_len);
+        msg.username_[username_len] = '\0'; // NULL terminate
+
+        size_t message_len = std::min(message.length(), static_cast<size_t>(MAX_MESSAGE_LENGTH - 1));
+        std::memcpy(msg.message_, message.c_str(), message_len);
+        msg.message_[message_len] = '\0'; // NULL terminate
+
+        return msg;
+    }
+```
+**Initalise Message Object**: A `chat_message` object `msg` is created and its type is set to `GROUP_MESSAGE`,
+
+**Handling Group Name**: The length of `group_name` is calculated to ensure it doesn't exceed `MAX_GROUPNAME_LENGTH - 1`, leaving space for a null terminator. This step prevents buffer overflow by limiting the number of characters copied to `msg.groupname_`.
+
+**Handling the Username**: Similarly, the length of username is adjusted to fit within `MAX_USERNAME_LENGTH - 1`, and its content is copied into `msg.username_`. The username field is also null-terminated.
+
+**Handling Messaging**: The message contents length is checked against` MAX_MESSAGE_LENGTH - 1` to ensure it does not exceed the maximum allowed size. This step is crucial for maintaining data integrity and preventing overflows,
+
+The message content is copied into `msg.message_` and like the other fields, it is null-terminated to mark the end of the string.
+
+**Return**: Finally, the fully prepared `chat_message` object is returned, ready to be used for group messaging.
+
+
+
+
+
+
 
 
 
