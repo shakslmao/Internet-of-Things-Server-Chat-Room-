@@ -814,8 +814,6 @@ void server()
 
             else if (chat::is_valid_type(type))
             {
-                // Assuming your original dispatch mechanism here, which looks up the appropriate handler
-                // from the handle_messages array based on the message type.
                 handle_messages[type](online_users, username, msg, client_address, sock, exit_loop);
             }
             else
