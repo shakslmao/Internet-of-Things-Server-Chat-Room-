@@ -891,8 +891,7 @@ case chat::GROUP_MESSAGE:
 ![alt text](images/groupmsg4.png)
 
 
-## void server()
-
+### void server()
 ```cpp
  if (len == sizeof(chat::chat_message))
         {
