@@ -3,7 +3,7 @@
 CC = clang++
 AR = ar
 LD = clang++
-CPPFLAGS = -std=c++17  -I./ -I/opt/iot/include -D__DEBUG__=1
+CPPFLAGS = -std=c++17 -g -I./ -I/opt/iot/include -D__DEBUG__=1
 
 LDFLAGS = -lpthread -lncurses -L/opt/iot/lib -liot
 

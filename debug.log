@@ -1,10 +1,8 @@
-DEBUG: chat_client.cpp:150:main(): Join message (user3) sent, waiting for JACK
+DEBUG: chat_client.cpp:150:main(): Join message (user1) sent, waiting for JACK
 DEBUG: chat_client.cpp:156:main(): Received jack
-DEBUG: chat_client.cpp:288:main(): Group message sent to 'uwe'
-e sent
+DEBUG: chat_client.cpp:230:main(): Received Exit from GUI
 DEBUG: chat_client.cpp:294:main(): Broadcast message sent
-DEBUG: chat_client.cpp:214:main(): Add to Group message sent for user 'user1' to group 'uwe'
-DEBUG: chat_client.cpp:294:main(): Broadcast message sent
-DEBUG: chat_client.cpp:214:main(): Add to Group message sent for user 'user2' to group 'uwe'
-DEBUG: chat_client.cpp:294:main(): Broadcast message sent
-DEBUG: chat_client.cpp:288:main(): Group message sent to 'uwe'
+DEBUG: chat_client.cpp:413:main(): Exited loop
+DEBUG: chat_client.cpp:421:main(): Time to rest
+loop
+DEBUG: chat_client.cpp:421:main(): Time to rest

@@ -551,6 +551,49 @@ void handle_exit(
     exit_loop = true;
 }
 
+/*
+void handle_exit(
+    online_users &online_users,
+    group_members &groups,
+    user_group_map &user_groups,
+    const std::string &username,
+    struct sockaddr_in &client_address,
+    uwe::socket &sock,
+    bool &exit_loop)
+{
+    DEBUG("Handling client exit for username: %s\n", username.c_str());
+
+    // Remove the user from the online_users map
+    auto user_it = online_users.find(username);
+    if (user_it != online_users.end())
+    {
+        delete user_it->second; // Assuming this is dynamically allocated memory
+        online_users.erase(user_it);
+    }
+
+    // Remove the user from any groups they are part of
+    auto group_it = user_groups.find(username);
+    if (group_it != user_groups.end())
+    {
+        auto &members = groups[group_it->second];
+        members.erase(std::remove(members.begin(), members.end(), username), members.end());
+        user_groups.erase(group_it);
+    }
+
+    // Optionally, notify other users of this user's exit
+    chat::chat_message notification_msg = chat::broadcast_msg("Server", username + " has left the chat.");
+    for (const auto &[user, addr] : online_users)
+    {
+        if (user != username)
+        { // Avoid sending the notification to the user who is exiting
+            sock.sendto(reinterpret_cast<const char *>(&notification_msg), sizeof(notification_msg), 0, (sockaddr *)addr, sizeof(struct sockaddr_in));
+        }
+    }
+
+        DEBUG("Exit handled for username: %s\n", username.c_str());
+}
+*/
+
 /**
  * @brief
  *
@@ -811,7 +854,16 @@ void server()
                 std::string msg = {(const char *)&message->message_[0]};
                 handle_group_message(online_users, groups, user_groups, username, group_name, msg, client_address, sock, exit_loop);
             }
-
+            else if (type == chat::EXIT)
+            {
+                DEBUG("Received exit message from username: %s\n", username.c_str());
+                handle_exit(online_users, username, "", client_address, sock, exit_loop);
+            }
+            else if (type == chat::LEAVE)
+            {
+                DEBUG("Received leave message from username: %s\n", username.c_str());
+                handle_leave(online_users, username, "", client_address, sock, exit_loop);
+            }
             else if (chat::is_valid_type(type))
             {
                 handle_messages[type](online_users, username, msg, client_address, sock, exit_loop);
