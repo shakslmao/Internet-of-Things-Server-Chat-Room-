@@ -894,14 +894,6 @@ case chat::GROUP_MESSAGE:
 ## void server type implementation
 
 ```cpp
- if (len == sizeof(chat::chat_message))
-        {
-            chat::chat_message *message = reinterpret_cast<chat::chat_message *>(buffer);
-            auto type = static_cast<chat::chat_type>(message->type_);
-            std::string username{(const char *)&message->username_[0]};
-            std::string msg{(const char *)&message->message_[0]};
-            std::string group_name{(const char *)&message->groupname_[0]};
-
             if (type == chat::CREATE_GROUP)
             {
                 DEBUG("Raw username: %s, Raw group name: %s\n", (const char *)&message->username_[0], (const char *)&message->groupname_[0]);
@@ -929,11 +921,6 @@ case chat::GROUP_MESSAGE:
                 // from the handle_messages array based on the message type.
                 handle_messages[type](online_users, username, msg, client_address, sock, exit_loop);
             }
-            else
-            {
-                // uknown message type
-            }
-        }
 ```
 
 **Handling Different Types**:
