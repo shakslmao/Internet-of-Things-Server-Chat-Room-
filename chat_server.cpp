@@ -26,6 +26,7 @@
 // ./chat_client "127.0.0.1" 1000 s2-akram 2> debug.log
 // ./chat_client "127.0.0.1" 1020 user1 2> debug.log
 // ./chat_client "127.0.0.1" 1040 user2 2> debug.log
+// ./chat_client "127.0.0.1" 1080 user3 2> debug.log
 
 // /opt/iot/bin/packets_clear
 
