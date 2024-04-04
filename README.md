@@ -483,7 +483,7 @@ inline chat_message create_group(std::string group_name, std::string username)
 ```
 The function `create_group` constructs a `chat_message` object for the creation of a new group chat. The message includes the group names and the user of the creating the group. The function ensures that the data copied into the message buffer does nto exceed the predefined limits, avoiding buffer overflow issues.
 
-- **Initalise `chat_message` object:
+- **Initalise `chat_message` object**:
     - A new `chat_message` object `msg` is created and its `type_` field is set to `CREATE_GROUP`. This indicates the type of message and the command to create a new group
 
 - **Handle Group Name**:
@@ -871,6 +871,20 @@ case chat::GROUP_MESSAGE:
     break;
 }
 ```
+**Command Check**: It first checks if the input command is "groupmsg" and ensures there are at least three parts in the `cmds` list (the command itself, the group name, and message).
+
+**Extract Group Name**: The message content, starting from the third element, is reconstructed into a single string. This allows for messages that contain spaces.
+
+- **Send Group Messasge**:
+    - A` chat::chat_message` object is created using the `chat::group_message` function, incorporating the group name, the senders username, and the message content.
+    - This message is then sent to the server using `sock.sendto()`, targeting the servers network address.
+    - A debug log entry confirms the message was sent.
+
+- **Group Message Display**: 
+    - **Construct Display Message**: A string is constructed to display the message in a specific format, including the group name, senders username, and the message content. This format provides clear context for the message within the GUI.
+    - **Display Command**: A `chat::display_command` object is created for the GUI console (chat::GUI_CONSOLE), containing the formatted message string.
+    - This command object is then sent to (gui_tx.send(cmd)), which handles displaying the message in the applications UI.
+
 
 
 
