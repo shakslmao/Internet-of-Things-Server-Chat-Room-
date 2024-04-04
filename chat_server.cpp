@@ -568,7 +568,7 @@ void handle_error(
 }
 
 /**
- * INSTRUCTION:
+ * INSTRUCTION: <creategroup>:<groupname>
  * @brief Creates a new group with the specified name if it doesn't already exist, adds the creating user as the first member,
  *        and broadcasts a creation message to all online users except the creator. If the group already exists, an error message is sent back.
  *        Additionally, it sends a confirmation message to the creator. This function handles the creation of a new group,
