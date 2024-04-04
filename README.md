@@ -483,7 +483,7 @@ inline chat_message create_group(std::string group_name, std::string username)
 ```
 The function `create_group` constructs a `chat_message` object for the creation of a new group chat. The message includes the group names and the user of the creating the group. The function ensures that the data copied into the message buffer does nto exceed the predefined limits, avoiding buffer overflow issues.
 
-- **Initalise `chat_message` object:
+- **Initalise `chat_message` object**:
     - A new `chat_message` object `msg` is created and its `type_` field is set to `CREATE_GROUP`. This indicates the type of message and the command to create a new group
 
 - **Handle Group Name**:
@@ -577,8 +577,8 @@ case chat::CREATE_GROUP:
 - **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
 - **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
 - **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
-![alt text](images/screenshotcreategroup.png)
-
+![alt text](images/creategroup1.png)
+![alt text](images/creategroup2.png)
 
 ## Add Users to Group
 
@@ -746,7 +746,147 @@ case chat::ADD_TO_GROUP:
     - If the command and its arguments are valid, it creates an "Add to Group" message using the `chat::add_to_group `function. 
     - The message is then sent over the network using `sock.sendto()`, targeting the servers address. Allowing the server to process this command, updating group memberships, and notifying the group members of the change.
 
-![alt text](/images/)
+![alt text](images/addtogroup1.png)
+![alt text](images/addtogroup2.png)
+![alt text](images/addtogroup3.png)
+
+## Group Messaging
+
+**Header Implementation**
+- The group_message function is designed to construct a `chat_message` object intended for group messaging within the chat app. It prepares the message by including the group name, the username of the sender, and the message content, making sure that each piece of information fits within predefined length limits and is properly null-terminated.
+
+```cpp
+ inline chat_message group_message(std::string group_name, std::string username, std::string message)
+    {
+        chat_message msg;
+        msg.type_ = GROUP_MESSAGE;
+
+        size_t group_name_len = std::min(group_name.length(), static_cast<size_t>(MAX_GROUPNAME_LENGTH - 1));
+        std::memcpy(msg.groupname_, group_name.c_str(), group_name_len);
+        msg.groupname_[group_name_len] = '\0'; // NULL terminate
+
+        size_t username_len = std::min(username.length(), static_cast<size_t>(MAX_USERNAME_LENGTH - 1));
+        std::memcpy(msg.username_, username.c_str(), username_len);
+        msg.username_[username_len] = '\0'; // NULL terminate
+
+        size_t message_len = std::min(message.length(), static_cast<size_t>(MAX_MESSAGE_LENGTH - 1));
+        std::memcpy(msg.message_, message.c_str(), message_len);
+        msg.message_[message_len] = '\0'; // NULL terminate
+
+        return msg;
+    }
+```
+**Initalise Message Object**: A `chat_message` object `msg` is created and its type is set to `GROUP_MESSAGE`,
+
+**Handling Group Name**: The length of `group_name` is calculated to ensure it doesn't exceed `MAX_GROUPNAME_LENGTH - 1`, leaving space for a null terminator. This step prevents buffer overflow by limiting the number of characters copied to `msg.groupname_`.
+
+**Handling the Username**: Similarly, the length of username is adjusted to fit within `MAX_USERNAME_LENGTH - 1`, and its content is copied into `msg.username_`. The username field is also null-terminated.
+
+**Handling Messaging**: The message contents length is checked against` MAX_MESSAGE_LENGTH - 1` to ensure it does not exceed the maximum allowed size. This step is crucial for maintaining data integrity and preventing overflows,
+
+The message content is copied into `msg.message_` and like the other fields, it is null-terminated to mark the end of the string.
+
+**Return**: Finally, the fully prepared `chat_message` object is returned, ready to be used for group messaging.
+
+
+**Server Implementation**:
+```cpp
+void handle_group_message(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, std::string message, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received group message\n");
+
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Verify sender is a part of the group
+    if (user_groups.find(username) == user_groups.end() || user_groups[username] != group_name)
+    {
+        handle_error(ERR_USER_NOT_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Retrieve group members
+    auto &members = groups[group_name];
+
+    // Send message to all group members
+    for (const auto &member : members)
+    {
+        auto it = online_users.find(member);
+        if (it != online_users.end())
+        { // Member is online
+            chat::chat_message group_msg = chat::group_message(group_name, username, message);
+            sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)it->second, sizeof(struct sockaddr_in));
+            DEBUG("Group message sent to '%s' in group '%s'\n", member.c_str(), group_name.c_str());
+        }
+    }
+}
+```
+**Logging**: A debug log entry is made upon receiving a request to handle a group message, which is helpful for monitoring and troubleshooting.
+
+**Group Existence Validation**: The function first checks if the specified `group_name` exists within the groups data structure. If not, it calls `handle_error` with `ERR_GROUP_NOT_FOUND` to signal the error condition, and then it exits early from the function.
+
+**Sender Member Validation**: It verifies that the username of the sender is associated with the `group_name` in the `user_groups` map. If the username is not found or is not associated with the group, `handle_error` is called with `ERR_USER_NOT_IN_GROUP`, and the function exits early. This step ensures that only members of a group can send messages to it.
+
+**Retrieving Group Members**: The members of the  group are retrieved from the groups data, which maps group names to lists of member usernames.
+
+- **Sending the Message to Members**: 
+    - The function iterates over each member of the group. For each member, it checks if they are online by looking them up in the `online_users` data structure, which maps usernames to their network addresses.
+    - If a member is online, the server creates a group message using `chat::group_message`, which takes the `group_name`, `username` of the sender, and the `message` content.
+    - The message is then sent to the online member using `sock.sendto()`, which transmits the message over the network to the member address. This ensures that all online members of the group receive the message.
+
+
+**Client Implementation**:
+```cpp
+else if (cmds.size() >= 3 && cmds[0] == "groupmsg")
+{
+    // Group message handling code
+    std::string group_name = cmds[1]; // Assume cmds[1] contains the group name
+    // Reconstruct the message content from the remaining parts of cmds
+    std::string message_content = cmds[2];
+    for (size_t i = 3; i < cmds.size(); ++i)
+    {
+        message_content += " " + cmds[i];
+    }
+    // Construct and send the group message
+    chat::chat_message group_msg = chat::group_message(group_name, username, message_content);
+    sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    DEBUG("Group message sent to '%s'\n", group_name.c_str());
+}
+
+case chat::GROUP_MESSAGE:
+{
+    std::string msg = "group(";
+    msg += std::string((char *)(*result).groupname_); // Append group name
+    msg += ") ";
+    msg += std::string((char *)(*result).username_); // Append username of the sender
+    msg += ": ";
+    msg += std::string((char *)(*result).message_); // Append the message content
+
+    chat::display_command cmd{chat::GUI_CONSOLE, msg};
+    gui_tx.send(cmd);
+    break;
+}
+```
+**Command Check**: It first checks if the input command is "groupmsg" and ensures there are at least three parts in the `cmds` list (the command itself, the group name, and message).
+
+**Extract Group Name**: The message content, starting from the third element, is reconstructed into a single string. This allows for messages that contain spaces.
+
+- **Send Group Messasge**:
+    - A` chat::chat_message` object is created using the `chat::group_message` function, incorporating the group name, the senders username, and the message content.
+    - This message is then sent to the server using `sock.sendto()`, targeting the servers network address.
+    - A debug log entry confirms the message was sent.
+
+- **Group Message Display**: 
+    - **Construct Display Message**: A string is constructed to display the message in a specific format, including the group name, senders username, and the message content. This format provides clear context for the message within the GUI.
+    - **Display Command**: A `chat::display_command` object is created for the GUI console (chat::GUI_CONSOLE), containing the formatted message string.
+    - This command object is then sent to (gui_tx.send(cmd)), which handles displaying the message in the applications UI.
+
+
+
 
 
 
