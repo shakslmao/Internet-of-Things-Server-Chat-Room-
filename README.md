@@ -450,7 +450,11 @@ if (cmds.size() == 2 && type == chat::UNKNOWN)
     - The `sendto` function arguments ensure that the message is correctly formatted as a byte array and sent to the correct server address and port.
 
 
-## Task 3 Group Messaging (this was a headache...)
+## Task 3 Group Messaging
+**GUI instructions to Create/Add/Message in Groups**
+- Create Group: `<creategroup>:<groupname>`
+- Add to Group: `<addtogroup>:<groupname>:<user>`
+- Group Messasge: `<groupmsg>:<groupname>:<message>`
 
 ### Create Group
 
@@ -567,14 +571,183 @@ case chat::CREATE_GROUP:
     break;
 }
 ```
+- The command "creategroup" is converted to an enum value chat::CREATE_GROUP using a string_to_int function, facilitating the switch-case statements operation. This approach allows for efficient command parsing and handling.
 
 - **Command Check**: The code starts by checking if the `cmds` has more than one element, this check ensures that the command to create a group is followed by at least one argument.
 - **Group Name Extraction**: If the command format is correct, the group name is extracted from the `cmds` list, `std::string group_name = cmds[1];`. This group name is the inteded name for the new group that the user wishes to create.
 - **Group Creation Message**: A `chat::chat_message` object, `creategroup_msg` is created by calling `chat::create_group(group_name, username)`. This function prepares a message of a specific format that the server recognises as a request to create a new group.
 - **Sending the Request**: The prepared `creategroup_msg` is sent to the server using `sock.sendto`. This line of code sends the group creation message to the servers address (server_address), leveraging the network socket (sock) established for communication between the client and the server.
+![alt text](images/screenshotcreategroup.png)
 
 
-[![alt text]()]
+## Add Users to Group
+
+**Header Implementation**
+- The add_to_group function is crafted to prepare a chat_message structure that signifies a request or command to add a user to a group within a chat application.
+
+```cpp
+ inline chat_message add_to_group(std::string group_name, std::string username)
+    {
+        chat_message msg = {};
+        // Ensure we do not exceed buffer size - 1 to leave space for null terminator
+        size_t group_name_len = std::min(group_name.length(), sizeof(msg.groupname_) - 1);
+        size_t username_len = std::min(username.length(), sizeof(msg.username_) - 1);
+
+        memcpy(msg.groupname_, group_name.c_str(), group_name_len);
+        msg.groupname_[group_name_len] = '\0'; // Explicitly null-terminate
+        memcpy(msg.username_, username.c_str(), username_len);
+        msg.username_[username_len] = '\0'; // Explicitly null-terminate
+
+        msg.type_ = ADD_TO_GROUP; // Set the message type
+        msg.message_[0] = '\0';   // Explicitly null-terminate the message part
+
+        return msg;
+    }
+```
+- **Initialise `chat_message` object:
+    - `chat_message msg = {};` initialises `msg` with default values, ensuring all fields are set to their default state (numeric fields to 0, pointers to nullptr, and arrays to zeroed bytes).
+
+- **Prepare `group_name` and `username` Strings**:
+    - The lengths of `group_name` and `username` are calculated using` std::min` to ensure they do not exceed the buffer size reserved for them in `msg`. This step is critical to avoid writing past the end of the buffers, which could lead to undefined behavior.
+    - `- 1` in the calculation `(sizeof(msg.groupname_) - 1` and `sizeof(msg.username_) - 1)` ensures theres space left for the null terminator, a requirement for C-style strings.
+
+- **Copy the Strings into `chat_message`**:
+    - `memcpy(msg.groupname_, group_name.c_str(), group_name_len)`; copies `group_name_len` bytes of `group_name` into `msg.groupname_.`.
+    - `memcpy(msg.username_, username.c_str(), username_len);` similarly copies `username_len` bytes of `username` into `msg.username_.`.
+    - Both `groupname_` and `username_` fields are explicitly null terminated after copying. This  nul-termination is important because `memcpy` does not null-terminate the buffer.
+
+- **Set Message Type**
+    - `msg.type_ = ADD_TO_GROUP;` sets the message type to `ADD_TO_GROUP`, this type tells the receiver how to interpret the message.
+
+- **Initalise the Message Field**
+    - `msg.message_[0]` ensures the `message_` field of the `msg` structure starts with a null character, making it an empty string.
+
+**Server Implementation of Add to Group**
+```cpp
+void handle_add_to_group(online_users &online_users, group_members &groups, user_group_map &user_groups, std::string username, std::string group_name, struct sockaddr_in &client_address, uwe::socket &sock, bool &exit_loop)
+{
+    DEBUG("Received addtogroup\n");
+
+    // Check if the group exists
+    if (groups.find(group_name) == groups.end())
+    {
+        handle_error(ERR_GROUP_NOT_FOUND, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if the user exists in online users
+    if (online_users.find(username) == online_users.end())
+    {
+        handle_error(ERR_UNKNOWN_USERNAME, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Check if user is already in the group
+    auto &members = groups[group_name];
+    if (std::find(members.begin(), members.end(), username) != members.end())
+    {
+        handle_error(ERR_USER_ALREADY_IN_GROUP, client_address, sock, exit_loop);
+        return;
+    }
+
+    // Add user to the group
+    members.push_back(username);
+    user_groups[username] = group_name;
+
+    // Broadcast the message to all users in the group
+    std::string message = "Server: " + username + " has joined the group [" + group_name + "]";
+    for (const auto &member : members)
+    {
+        DEBUG("Message before send to %s: %s\n", member.c_str(), message.c_str());
+
+        auto member_it = online_users.find(member);
+        if (member_it != online_users.end() && member_it->second != nullptr)
+        { // Check if member is online
+            chat::chat_message msg = chat::broadcast_msg("Server", message);
+            ssize_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&msg), sizeof(msg), 0, (sockaddr *)member_it->second, sizeof(struct sockaddr_in));
+            if (sent_bytes != sizeof(msg))
+            {
+                DEBUG("Failed to send message to user %s\n", member.c_str());
+            }
+        }
+        else
+        {
+            DEBUG("Member %s not found online\n", member.c_str());
+        }
+    }
+}
+```
+
+**Group Existence Check**
+- Verifies if the specified `group_name` exists within the groups container. If not, it invokes `handle_error` with `ERR_GROUP_NOT_FOUND`, indicating the group does not exist, and then exits early from the function.
+
+**User Existence Check**
+- Checks if the username exists in the `online_users` map. If the user is not found, `handle_error` is called with `ERR_UNKNOWN_USERNAME`, indicating the user is not recognised as online, and the function exits early.
+
+**Is User Already a Member? Check**
+- Checks if the user is already a member of the specified group by searching the groups member list. If the user is found, it calls `handle_error` with `ERR_USER_ALREADY_IN_GROUP` and returns early, preventing duplicate group entry.
+
+**Adding the User to the Group**
+- If all checks pass, the user is added to the groups member list, and the `user_groups` mapping is updated to reflect the new group membership for the user.
+
+**Broadcasting the Join**
+- Constructs a message indicating that the user has joined the group and iterates over all group members to send this notification.
+- For each member, it first checks if they are online. If they are, it sends the message using `sock.sendto(`). This ensures that only online members are notified.
+- Utilises debug logging to confirm message and to log failures or issues.
+
+
+**Client Implementation of Add to Group**
+```cpp
+case string_to_int("addtogroup"): // to add a user to a group
+    return chat::ADD_TO_GROUP;
+
+case chat::ADD_TO_GROUP:
+{
+    if (cmds.size() > 2) 
+    {
+        std::string group_name = cmds[1];
+        std::string user_to_add = cmds[2];
+
+        // Validate command input
+        if (!group_name.empty() && !user_to_add.empty())
+        {
+            chat::chat_message addtogroup_msg = chat::add_to_group(group_name, user_to_add);
+            size_t sent_bytes = sock.sendto(reinterpret_cast<const char *>(&addtogroup_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+            if (sent_bytes != sizeof(addtogroup_msg))
+            {
+                DEBUG("Error sending Add to Group message\n");
+            }
+            else
+            {
+            DEBUG("Add to Group message sent for user '%s' to group '%s'\n", user_to_add.c_str(), group_name.c_str());
+            }
+        }
+        else
+        {
+            DEBUG("Invalid Add to Group command format\n");
+        }
+    }
+    else
+    {
+        DEBUG("Invalid Add to Group command format\n");
+    }
+    break;
+}
+```
+**Command identifier**: The command `addtogroup` is converted to an enum value `chat::ADD_TO_GROUP` using `string_to_int` function, facilitating the switch-case statement operation. This approach allows for efficient command parsing and handling.
+
+**Command Function Validation**: It checks if the `cmds` list contains more than two elements, indicating the command includes both a gorup and a username to add to the group
+
+**Extract Command Args**; If the command format is correct, it extracts the `group_name` and `user_to_add` from the `cmds` list. The group name is the first argument after the command and the user to add is the second argument.
+
+**Futher Validation**: Verifies that neither the group nor the username to add is empty, this additonal check ensures that the command contains valid params.
+
+- **Create and Send `Add to Group` Message**:
+    - If the command and its arguments are valid, it creates an "Add to Group" message using the `chat::add_to_group `function. 
+    - The message is then sent over the network using `sock.sendto()`, targeting the servers address. Allowing the server to process this command, updating group memberships, and notifying the group members of the change.
+
+![alt text](/images/)
 
 
 
+    
