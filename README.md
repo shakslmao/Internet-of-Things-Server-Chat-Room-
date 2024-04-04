@@ -891,5 +891,57 @@ case chat::GROUP_MESSAGE:
 ![alt text](images/groupmsg4.png)
 
 
+## void server()
 
-    
+```cpp
+ if (len == sizeof(chat::chat_message))
+        {
+            chat::chat_message *message = reinterpret_cast<chat::chat_message *>(buffer);
+            auto type = static_cast<chat::chat_type>(message->type_);
+            std::string username{(const char *)&message->username_[0]};
+            std::string msg{(const char *)&message->message_[0]};
+            std::string group_name{(const char *)&message->groupname_[0]};
+
+            if (type == chat::CREATE_GROUP)
+            {
+                DEBUG("Raw username: %s, Raw group name: %s\n", (const char *)&message->username_[0], (const char *)&message->groupname_[0]);
+                std::string username{(const char *)&message->username_[0]};
+                std::string group_name{(const char *)&message->groupname_[0]}; // Extract the group name from the message
+                handle_creategroup(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
+            }
+            else if (type == chat::ADD_TO_GROUP)
+            {
+                std::string group_name = {(const char *)&message->groupname_[0]};
+                std::string username = {(const char *)&message->username_[0]};
+                handle_add_to_group(online_users, groups, user_groups, username, group_name, client_address, sock, exit_loop);
+            }
+            else if (type == chat::GROUP_MESSAGE)
+            {
+                std::string group_name = {(const char *)&message->groupname_[0]};
+                std::string username = {(const char *)&message->username_[0]};
+                std::string msg = {(const char *)&message->message_[0]};
+                handle_group_message(online_users, groups, user_groups, username, group_name, msg, client_address, sock, exit_loop);
+            }
+
+            else if (chat::is_valid_type(type))
+            {
+                // Assuming your original dispatch mechanism here, which looks up the appropriate handler
+                // from the handle_messages array based on the message type.
+                handle_messages[type](online_users, username, msg, client_address, sock, exit_loop);
+            }
+            else
+            {
+                // uknown message type
+            }
+        }
+```
+
+**Handling Different Types**:
+- CREATE_GROUP: If the message requests group creation, it extracts the necessary information (username and group name) and calls handle_creategroup to process this request.
+- ADD_TO_GROUP: Similar to group creation, if the message is to add a user to a group, it extracts the relevant information and calls handle_add_to_group.
+- GROUP_MESSAGE: For messages meant to be sent to a group, it extracts all relevant details (group name, username, message content) and calls handle_group_message.
+- It includes a check for other valid message types (chat::is_valid_type(type)) and dispatches them to their respective handlers.
+
+
+
+
