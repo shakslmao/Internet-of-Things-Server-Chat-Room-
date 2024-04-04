@@ -322,7 +322,7 @@ auto recipient_it = online_users.find(recipient_username);
 - The for loop iterates over each entry in the `online_users` map. Each entry contains a pair where the first element is the users identifier and the second element is a pointer to dynamically allocated memory.
 - `delete user.second;`: For each user, this line deallocates the memory pointed to by the second element of the pair. This is necessary to prevent memory leaks, ensuring that all dynamically allocated resources are properly released when they're no longer needed.
 - `online_users.clear()`: After deallocating the memory for each user, this line clears the `online_users` container, removing all its elements. This step ensures that the container is left in a clean state, with no dangling pointers.
-
+![alt text](/images/exit.png)
 
 ## Task 2 Client Side
 - **Objective**: Implement and enhance the clients ability to interact with a chat server, handle user inputs, display messages and manage the state of the chat session effectively.
