@@ -885,8 +885,10 @@ case chat::GROUP_MESSAGE:
     - **Display Command**: A `chat::display_command` object is created for the GUI console (chat::GUI_CONSOLE), containing the formatted message string.
     - This command object is then sent to (gui_tx.send(cmd)), which handles displaying the message in the applications UI.
 
-
-
+![alt text](images/groupmsg1.png)
+![alt text](images/groupmsg2.png)
+![alt text](images/groupmsg3.png)
+![alt text](images/groupmsg4.png)
 
 
 
