@@ -825,7 +825,52 @@ void handle_group_message(online_users &online_users, group_members &groups, use
     }
 }
 ```
+**Logging**: A debug log entry is made upon receiving a request to handle a group message, which is helpful for monitoring and troubleshooting.
 
+**Group Existence Validation**: The function first checks if the specified `group_name` exists within the groups data structure. If not, it calls `handle_error` with `ERR_GROUP_NOT_FOUND` to signal the error condition, and then it exits early from the function.
+
+**Sender Member Validation**: It verifies that the username of the sender is associated with the `group_name` in the `user_groups` map. If the username is not found or is not associated with the group, `handle_error` is called with `ERR_USER_NOT_IN_GROUP`, and the function exits early. This step ensures that only members of a group can send messages to it.
+
+**Retrieving Group Members**: The members of the  group are retrieved from the groups data, which maps group names to lists of member usernames.
+
+- **Sending the Message to Members**: 
+    - The function iterates over each member of the group. For each member, it checks if they are online by looking them up in the `online_users` data structure, which maps usernames to their network addresses.
+    - If a member is online, the server creates a group message using `chat::group_message`, which takes the `group_name`, `username` of the sender, and the `message` content.
+    - The message is then sent to the online member using `sock.sendto()`, which transmits the message over the network to the member address. This ensures that all online members of the group receive the message.
+
+
+**Client Implementation**:
+```cpp
+else if (cmds.size() >= 3 && cmds[0] == "groupmsg")
+{
+    // Group message handling code
+    std::string group_name = cmds[1]; // Assume cmds[1] contains the group name
+    // Reconstruct the message content from the remaining parts of cmds
+    std::string message_content = cmds[2];
+    for (size_t i = 3; i < cmds.size(); ++i)
+    {
+        message_content += " " + cmds[i];
+    }
+    // Construct and send the group message
+    chat::chat_message group_msg = chat::group_message(group_name, username, message_content);
+    sock.sendto(reinterpret_cast<const char *>(&group_msg), sizeof(chat::chat_message), 0, (sockaddr *)&server_address, sizeof(server_address));
+    DEBUG("Group message sent to '%s'\n", group_name.c_str());
+}
+
+case chat::GROUP_MESSAGE:
+{
+    std::string msg = "group(";
+    msg += std::string((char *)(*result).groupname_); // Append group name
+    msg += ") ";
+    msg += std::string((char *)(*result).username_); // Append username of the sender
+    msg += ": ";
+    msg += std::string((char *)(*result).message_); // Append the message content
+
+    chat::display_command cmd{chat::GUI_CONSOLE, msg};
+    gui_tx.send(cmd);
+    break;
+}
+```
 
 
 
