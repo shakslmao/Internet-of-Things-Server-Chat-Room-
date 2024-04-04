@@ -381,6 +381,7 @@ case chat::LEAVE:
     sent_leave = true;
     break;
 }
+![alt text](/images/leave.png)
 ```
 - **Functionality**:Handles the scenario where the user wants to leave the chat but not necessarily close the application.
 - **Operation**:
